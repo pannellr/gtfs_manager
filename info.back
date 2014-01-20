@@ -1,0 +1,22 @@
+;$Id$
+
+name = GTFS Manager
+description = Manages data input and route searching for GTFS transit data
+
+core = 7.x
+package = GTFS manager
+
+files[] = gtfs_manager.module
+files[] = gtfs_manager.install
+files[] = agency.controller.inc
+files[] = agency.pages.inc
+files[] = route.controller.inc
+files[] = route.pages.inc
+files[] = trip.controller.inc
+files[] = trip.pages.inc
+files[] = stop.controller.inc
+files[] = stop.pages.inc
+files[] = stop_time.controller.inc
+files[] = stop_time.pages.inc
+files[] = calendar.controller.inc
+files[] = calendar.pages.inc
