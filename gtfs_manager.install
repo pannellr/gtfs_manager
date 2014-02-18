@@ -18,6 +18,7 @@
  * @see https://developers.google.com/transit/gtfs/reference
  * for more information on the data model
  */
+ 
 function gtfs_manager_schema() {
 
   // agencies table
@@ -1942,9 +1943,9 @@ function gtfs_manager_schema() {
 }
 
 
-/**
- * Implements hook_update()
- */
+
+//Implements hook_update()
+
 function gtfs_manager_update_1() {
 
   //add route service area shapes tables
@@ -2935,6 +2936,4 @@ function gtfs_manager_update_16() {
       'scale' => 6
 	));
 
-}
-
-*/
+}*/

@@ -45,5 +45,5 @@ Drupal.behaviors.nextPrev = {
       }
 
   }};
-
-})(jQuery);
+}
+)(jQuery);
