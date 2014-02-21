@@ -358,6 +358,7 @@ function gtfs_manager_schema() {
     ),
     'indexes' => array(
       'sid' => array('sid'),
+      'stop_name_index' => array('stop_name')
     ),
     'primary key' => array('sid'),
   );
@@ -825,6 +826,12 @@ function gtfs_manager_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+    ),
+    'indexes' => array(
+      'fare_id_index' => array('fare_id'),
+      'contains_id_index' => array('contains_id'),
+      'route_id_index' => array('route_id'),
+      'origin_destinaton_index' => array('origin_id', 'destination_id'),
     ),
   );
 
@@ -1419,6 +1426,9 @@ function gtfs_manager_schema() {
       ),
     ),
     'primary key' => array('province_id'),
+    'indexes' => array(
+      'name_index' => array('name'),
+    ),
   );
 
     //add a timezones table
@@ -1821,6 +1831,7 @@ function gtfs_manager_schema() {
     ),
     'indexes' => array(
       'city_id' => array('city_id'),
+      'name_index' => array('city_name'),
     ),
     'primary key' => array('city_id'),
   );
@@ -1881,6 +1892,9 @@ function gtfs_manager_schema() {
       ),
     ),
     'primary key' => array('country_id'),
+    'indexes' => array(
+      'name_index' => array('country_name'),
+    ),
   );
 
   $schema['distance_units'] = array(
@@ -2921,6 +2935,18 @@ function gtfs_manager_update_17() {
         ));
 }
 
+//update 18 adds several indexes to improve query performance
+function gtfs_manager_update_18() {
+  db_add_index('stops', 'stop_name_index', array('stop_name'));	
+  db_add_index('fare_rules', 'fare_id_index', array('fare_id'));
+  db_add_index('fare_rules', 'contains_id_index', array('contains_id'));
+  db_add_index('fare_rules', 'route_id_index', array('route_id'));
+  db_add_index('fare_rules', 'origin_destination_index', array('origin_id','destinaton_id'));
+  db_add_index('provinces', 'name_index', array('name'));
+  db_add_index('cities', 'name_index', array('city_name'));
+  db_add_index('countries', 'name_index', array('country_name'));
+}
+
 /*Didn't work on prod might need to write the query directly
  *
  *
@@ -2937,3 +2963,4 @@ function gtfs_manager_update_16() {
 	));
 
 }*/
+
