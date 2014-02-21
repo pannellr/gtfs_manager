@@ -2941,26 +2941,12 @@ function gtfs_manager_update_18() {
   db_add_index('fare_rules', 'fare_id_index', array('fare_id'));
   db_add_index('fare_rules', 'contains_id_index', array('contains_id'));
   db_add_index('fare_rules', 'route_id_index', array('route_id'));
-  db_add_index('fare_rules', 'origin_destination_index', array('origin_id','destinaton_id'));
+}
+
+function gtfs_manager_update_19() {
+  db_add_index('fare_rules', 'origin_destination_index', array('origin_id','destination_id'));
   db_add_index('provinces', 'name_index', array('name'));
   db_add_index('cities', 'name_index', array('city_name'));
   db_add_index('countries', 'name_index', array('country_name'));
 }
-
-/*Didn't work on prod might need to write the query directly
- *
- *
-function gtfs_manager_update_16() {
-  //make fare price decimal type
-  db_change_field('fare_attributes', 'price', 'price',
-    array('description' => 'the fare price',
-	   'type' => 'numeric',
-      'size' => 'normal',
-      'not null' => TRUE,
-      'default' => 0,
-      'precision' => 2,
-      'scale' => 6
-	));
-
-}*/
 
