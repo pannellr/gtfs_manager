@@ -2731,10 +2731,6 @@ $form['gtfs_manager_trip_type_radio'] = array(
 '#default_value' => 1,
 );
 
-$form['gtfs_manager_trip_type_radio'][0] = array(
-'#suffix' => '<div class="separator">or</div>'
-);
-
 //Date picker for travel date -- needs default date
 $form['gtfs_manager_search_date'] = array(
 '#type' => 'date_popup',
@@ -2860,11 +2856,6 @@ function gtfs_manager_search_form($form, &$form_state){
 			'#options' => array(0 => t('Round Trip'), 1 => t('One Way')),
 			'#default_value' => 1,
 	);
-
-	$form['gtfs_manager_trip_type_radio'][0] = array(
-			'#suffix' => '<div class="separator">or</div>'
-	);
-
 	//Date picker for travel date -- needs default date
 	$form['gtfs_manager_search_date'] = array(
 			'#type' => 'date_popup',
@@ -4799,15 +4790,15 @@ function gtfs_manager_legend_content(){
 	return '<div class="legend clearfix">
 				<h3>Feature Legend</h3>
 				<ul class="legend-list">
-					<li><span><img alt="Bike Friendly"
-							src="/sites/all/themes/atlantica/img/features/feature-bike-w.png">
-					</span> Ability to carry your bike</li>
 					<li><span><img alt="Accessible"
 							src="/sites/all/themes/atlantica/img/features/feature-accessible-w.png"></i>
 					</span> Accessible</li>
 					<li><span><img alt="WiFi"
 							src="/sites/all/themes/atlantica/img/features/feature-wifi-w.png">
 					</span> Free onboard Wi-Fi</li>
+					<li><span><img alt="Bike Friendly"
+							src="/sites/all/themes/atlantica/img/features/feature-bike-w.png">
+					</span> We can carry your bike</li>
 				</ul>
 			</div>';
 }

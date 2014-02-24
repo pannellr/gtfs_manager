@@ -83,7 +83,7 @@
 										<li>
 											<ul>
 												<li class="time"><h2>
-														<?php print $result->departure_arrival_time; ?>
+														<?php print $result->departure_departure_time; ?>
 													</h2></li>
 												<li class="location"><h6>
 														Depart from
