@@ -861,14 +861,28 @@ function gtfs_manager_menu() {
 	);
 
 	$items['gtfs_search/%/%/%/%/%'] = array(
-			'page callback' => 'results_one_way',
+			'page callback' => 'results_page_one_way',
 			'page arguments' => array(1,2,3,4,5,6),
 			'access callback' => TRUE,
 			'type' => MENU_CALLBACK,
 	);
 
 	$items['gtfs_search/%/%/%/%/%/%'] = array(
-			'page callback' => 'results_return_trip',
+			'page callback' => 'results_page_return_trip',
+			'page arguments' => array(1,2,3,4,5,6,7),
+			'access callback' => TRUE,
+			'type' => MENU_CALLBACK,
+	);
+	
+	$items['gtfs_query/%/%/%/%/%'] = array(
+			'page callback' => 'results_query_one_way',
+			'page arguments' => array(1,2,3,4,5,6),
+			'access callback' => TRUE,
+			'type' => MENU_CALLBACK,
+	);
+	
+	$items['gtfs_query/%/%/%/%/%/%'] = array(
+			'page callback' => 'results_query_return_trip',
 			'page arguments' => array(1,2,3,4,5,6,7),
 			'access callback' => TRUE,
 			'type' => MENU_CALLBACK,
@@ -1189,7 +1203,7 @@ function template_preprocess_display_search_results(&$variables) {
 					$result->price = $first_leg . '<br />' . $second_leg;
 
 				} else {
-					$result->price = money_format('%i', ((float)$result->second_leg_price + (float)$result->first_leg_price));
+					$result->price = money_format('$%i', ((float)$result->second_leg_price + (float)$result->first_leg_price));
 				}
 
 				$result->features = features_for($result);
@@ -1309,7 +1323,7 @@ function template_preprocess_display_search_results(&$variables) {
 					$result->price = $first_leg . '<br />' . $second_leg;
 
 				} else {
-					$result->price = money_format('%i', ((float)$result->second_leg_price + (float)$result->first_leg_price));
+					$result->price = money_format('$%i', ((float)$result->second_leg_price + (float)$result->first_leg_price));
 				}
 
 				$result->features = features_for($result);
@@ -1704,7 +1718,7 @@ function template_preprocess_gtfs_manager_trip_detail(&$variables) {
 function template_preprocess_transfer_report(&$variables) {
 	foreach ($variables['transfers'] as $transfer) {
 		$transfer->ignore_link = ($transfer->is_active == 0)
-		? l(t('Avtivate'), 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/activate')
+		? l(t('Activate'), 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/activate')
 		: l(t('Ignore'), 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/ignore');
 
 		$transfer->remove_link = l('Remove', 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/delete');
@@ -2670,7 +2684,6 @@ function gtfs_manager_block_view($delta = ''){
 			// Set the block title
 			$block['content'] = drupal_get_form('gtfs_manager_search_form');
 			break;
-
 		case 'gtfs_manager_widget':
 			$block['content'] = drupal_get_form('gtfs_manager_search_widget');
 			break;
@@ -2691,133 +2704,127 @@ function gtfs_manager_block_view($delta = ''){
  */
 function gtfs_manager_search_widget($form, &$form_state){
 
-$form['#attributes']['class'][] = 'search-form block';
+	$form['#attributes']['class'][] = 'search-form block';
 
-$form['header'] = array(
-		'#type' => 'markup',
-		'#markup' => '<h3><i class="icon-search"></i> Quick Search</h3>',
-);
+	$form['header'] = array(
+			'#type' => 'markup',
+			'#markup' => '<h3><i class="icon-search"></i> Quick Search</h3>',
+	);
 
-//Text field for origin
-$form['gtfs_manager_search_origin'] = array(
-		'#type' => 'textfield',
-		'#size' => 27,
-		'#autocomplete_path' => 'stopname/autocomplete',
-		'#required' => TRUE,
-		'#prefix' => '<ul class="a-b"><li>',
-		'#suffix' => '</li>',
-		'#attributes' => array(
-				'placeholder' => 'Enter Departure City/Town',
-		),
-);
+	//Text field for origin
+	$form['gtfs_manager_search_origin'] = array(
+			'#type' => 'textfield',
+			'#size' => 27,
+			'#autocomplete_path' => 'stopname/autocomplete',
+			'#required' => TRUE,
+			'#prefix' => '<ul class="a-b"><li>',
+			'#suffix' => '</li>',
+			'#attributes' => array(
+					'placeholder' => 'Enter Departure City/Town',
+			),
+	);
 
-//Text field for destination
-$form['gtfs_manager_search_destination'] = array(
-		'#type' => 'textfield',
-		'#size' => 27,
-		'#autocomplete_path' => 'stopname/autocomplete',
-		'#required' => TRUE,
-		'#prefix' => '<li>',
-		'#suffix' => '</li></ul>',
-		'#attributes' => array(
-				'placeholder' => 'Enter Destination City/Town',
-),
-);
+	//Text field for destination
+	$form['gtfs_manager_search_destination'] = array(
+			'#type' => 'textfield',
+			'#size' => 27,
+			'#autocomplete_path' => 'stopname/autocomplete',
+			'#required' => TRUE,
+			'#prefix' => '<li>',
+			'#suffix' => '</li></ul>',
+			'#attributes' => array(
+					'placeholder' => 'Enter Destination City/Town',
+			),
+	);
 
-//Radio button for round trip
-$form['gtfs_manager_trip_type_radio'] = array(
-'#type' => 'radios',
-'#options' => array(0 => t('Round Trip'), 1 => t('One Way')),
-'#default_value' => 1,
-);
+	//Radio button for round trip
+	$form['gtfs_manager_trip_type_radio'] = array(
+			'#type' => 'radios',
+			'#options' => array(0 => t('Round Trip'), 1 => t('One Way')),
+			'#default_value' => 1,
+	);
 
-//Date picker for travel date -- needs default date
-$form['gtfs_manager_search_date'] = array(
-'#type' => 'date_popup',
-'#date_format' => 'd-m-Y',
-'#default_value' => 'YYYY-MM-DD 00:00:00',
-'#date_year_range' => '0:+2',
-'#date_label_position' => 'invisible',
-'#attributes' => array(
-'class' => array('search-date'),
-'readonly' => 'readonly',
-'placeholder' =>  'Departure (mm/dd/yyyy)',
-),
-'#required' => TRUE,
-'#prefix' => '<div class="date-container"><div id="departDate" class="datepicker">',
-);
+	//Date picker for travel date -- needs default date
+		//Date picker for travel date -- needs default date
+	$form['gtfs_manager_search_date'] = array(
+			'#type' => 'textfield',
+			'#attributes' => array(
+					'class' => array('search-date'),
+					'placeholder' =>  'Departure (mm/dd/yyyy)',
+			),
+			'#required' => TRUE,
+			'#prefix' => '<div class="date-container"><div id="departDate">',
+	);
 
-$form['departdate_icon'] = array(
-'#type' => 'item',
-'#markup' => '<label for="edit-gtfs-manager-search-date-datepicker-popup-0" class="date-picker-icon"><i class="icon-calendar-empty"></i></label></div>',
-);
+	$form['departdate_icon'] = array(
+			'#type' => 'item',
+			'#markup' => '<label for="edit-gtfs-manager-search-date" class="date-picker-icon"><i class="icon-calendar-empty"></i></label></div>',
+	);
 
-//Date picker for return date
-$form['gtfs_manager_return_date'] = array(
-'#type' => 'date_popup',
-'#date_format' => 'd-m-Y',
-'#default_value' => 'YYYY-MM-DD 00:00:00',
-'#date_year_range' => '0:+2',
-'#date_label_position' => 'invisible',
-'#attributes' => array(
-'class' => array('return-date'),
-'placeholder' => 'Return (mm/dd/yyyy)'
-),
-'#states' => array(
-'required' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "0"),),
-'visible' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "0"),),
-'disabled' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "1"),),
+	//Date picker for return date
+	$form['gtfs_manager_return_date'] = array(
+			'#type' => 'textfield',
+			'#attributes' => array(
+					'class' => array('return-date'),
+					'placeholder' => 'Return (mm/dd/yyyy)'
+			),
+			'#states' => array(
+					'required' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "0"),),
+					'visible' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "0"),),
+					'disabled' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "1"),),
 
-),
-'#prefix' => '<div id="returnDate" class="datepicker">',
-);
+			),
+			'#prefix' => '<div id="returnDate">',
+	);
+	
+	$form['returndate_icon'] = array(
+			'#type' => 'item',
+			'#markup' => '<label for="edit-gtfs-manager-return-date" class="date-picker-icon"><i class="icon-calendar-empty"></i></label></div>',
+			'#states' => array(
+					'visible' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "0"),),
+					'disabled' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "1"),),
+			
+			),
+			'#suffix' => '</div><div class="clearfix"></div>',
+	);
 
-$form['returndate_icon'] = array(
-'#type' => 'item',
-'#markup' => '<label for="edit-gtfs-manager-return-date-datepicker-popup-0" class="date-picker-icon"><i class="icon-calendar-empty"></i></label></div></div></div><div class="clearfix"></div>',
-'#states' => array(
-'visible' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "0"),),
-'invisible' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "1"),),
-),
-);
+	$form['buttons'] = array();
+	$form['buttons']['#weight'] = 100;
+	//Search button
+	$form['buttons']['submit'] = array(
+			'#type' => 'submit',
+			'#value' => 'Go',
+			'#weight' => 10,
+			'#submit' => array('gtfs_manager_search_form_submit'),
+			'#attributes' => array('class' => array('btn')),
+	);
 
-$form['buttons'] = array();
-$form['buttons']['#weight'] = 100;
-//Search button
-$form['buttons']['submit'] = array(
-'#type' => 'submit',
-'#value' => 'Go',
-'#weight' => 10,
-'#submit' => array('gtfs_manager_search_form_submit'),
-'#attributes' => array('class' => array('btn')),
-);
+	// 	$form['button'] = array(
+	// 	  '#prefix' => '<button class="btn" type="submit">',
+	// 	  '#markup' => '<img src="/sites/all/themes/atlantica/img/go.png" alt="Go!"/>',
+	// 	  '#suffix' => '</button>',
+	// 	);
 
-// 	$form['button'] = array(
-// 	  '#prefix' => '<button class="btn" type="submit">',
-// 	  '#markup' => '<img src="/sites/all/themes/atlantica/img/go.png" alt="Go!"/>',
-// 	  '#suffix' => '</button>',
-// 	);
+	// Get the path to the module
+	$path = drupal_get_path('module', 'gtfs_manager');
+	// Attach the CSS and JS to the form
+	$form['#attached'] = array('css' => array(
+			'type' => 'file',
+			'data' => $path
+			. '/search_form_theme.css',
+	),
 
-// Get the path to the module
-$path = drupal_get_path('module', 'gtfs_manager');
-// Attach the CSS and JS to the form
-$form['#attached'] = array('css' => array(
-'type' => 'file',
-'data' => $path
-. '/search_form_theme.css',
-),
+	);
+	$form['#validate'][] = 'gtfs_manager_search_form_validate';
+	$form['#submit'][] = 'gtfs_manager_search_form_submit';
 
-);
-$form['#validate'][] = 'gtfs_manager_search_form_validate';
-$form['#submit'][] = 'gtfs_manager_search_form_submit';
+	//stash results
+	if (!empty($form_state['results_table'])) {
+		$form['results_table'] = array('#markup' => $form_state['results_table'],
+				'#weight' => -10,);
+	}
 
-//stash results
-if (!empty($form_state['results_table'])) {
-$form['results_table'] = array('#markup' => $form_state['results_table'],
-'#weight' => -10,);
-}
-
-return $form;
+	return $form;
 }
 
 function gtfs_manager_search_form($form, &$form_state){
@@ -2856,34 +2863,27 @@ function gtfs_manager_search_form($form, &$form_state){
 			'#options' => array(0 => t('Round Trip'), 1 => t('One Way')),
 			'#default_value' => 1,
 	);
+	
+	
 	//Date picker for travel date -- needs default date
 	$form['gtfs_manager_search_date'] = array(
-			'#type' => 'date_popup',
-			'#date_format' => 'd-m-Y',
-			'#default_value' => 'YYYY-MM-DD 00:00:00',
-			'#date_year_range' => '0:+2',
-			'#date_label_position' => 'invisible',
+			'#type' => 'textfield',
 			'#attributes' => array(
 					'class' => array('search-date'),
-					'readonly' => 'readonly',
 					'placeholder' =>  'Departure (mm/dd/yyyy)',
 			),
 			'#required' => TRUE,
-			'#prefix' => '<div class="date-container"><div id="departDate">',
+			'#prefix' => '<div class="date-container">',
 	);
 
 	$form['departdate_icon'] = array(
 			'#type' => 'item',
-			'#markup' => '<label for="edit-gtfs-manager-search-date-datepicker-popup-0" class="date-picker-icon"><i class="icon-calendar-empty"></i></label></div>',
+			'#markup' => '<label for="edit-gtfs-manager-search-date" class="date-picker-icon"><i class="icon-calendar-empty"></i></label>',
 	);
 
 	//Date picker for return date
 	$form['gtfs_manager_return_date'] = array(
-			'#type' => 'date_popup',
-			'#date_format' => 'd-m-Y',
-			'#default_value' => 'YYYY-MM-DD 00:00:00',
-			'#date_year_range' => '0:+2',
-			'#date_label_position' => 'invisible',
+			'#type' => 'textfield',
 			'#attributes' => array(
 					'class' => array('return-date'),
 					'placeholder' => 'Return (mm/dd/yyyy)'
@@ -2894,16 +2894,16 @@ function gtfs_manager_search_form($form, &$form_state){
 					'disabled' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "1"),),
 
 			),
-			'#prefix' => '<div id="returnDate">',
 	);
 
 	$form['returndate_icon'] = array(
 			'#type' => 'item',
-			'#markup' => '<label for="edit-gtfs-manager-return-date-datepicker-popup-0" class="date-picker-icon"><i class="icon-calendar-empty"></i></label></div></div></div><div class="clearfix"></div>',
+			'#markup' => '<label for="edit-gtfs-manager-return-date" class="date-picker-icon"><i class="icon-calendar-empty"></i></label></div>',
 			'#states' => array(
 					'visible' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "0"),),
 					'invisible' => array(':input[name="gtfs_manager_trip_type_radio"]'  => array('value' => "1"),),
 			),
+			'#suffix' => '</div><div class="clearfix"></div>',
 	);
 
 	$form['buttons'] = array();
@@ -2930,11 +2930,14 @@ function gtfs_manager_search_form($form, &$form_state){
 */
 
 function gtfs_manager_search_form_validate($form, &$form_state) {
-	if (empty($form_state['values']['gtfs_manager_search_origin'])) {
+	$origin = $form_state['values']['gtfs_manager_search_origin'];
+	$destination = $form_state['values']['gtfs_manager_search_destination'];
+	
+	if (empty($origin) || $origin == "Enter Destination City/Town") {
 		form_set_error('gtfs_manager_search_date', t('Please choose an origin.'));
 	}
 
-	if (empty($form_state['values']['gtfs_manager_search_destination'])) {
+	if (empty($destination) || $destination == "Enter Destination City/Town") {
 		form_set_error('gtfs_manager_search_date', t('Please choose a destination.'));
 	}
 
@@ -2945,23 +2948,21 @@ function gtfs_manager_search_form_validate($form, &$form_state) {
 
 	//otherwise if province is not present try to fix the data without failing
 
-	$travel_date = '';
+	$travel_date = strtotime($form_state['values']['gtfs_manager_search_date']);
 
-	if (empty($form_state['values']['gtfs_manager_search_date'][0])) {
+	if (!$travel_date) {
 		form_set_error('gtfs_manager_search_date', t('Please choose a search date.'));
-	} else {
-		$travel_date = new DateTime($form_state['values']['gtfs_manager_search_date']);
 	}
 
-	$today = new DateTime("today");
+	$today = strtotime("today");
 
 	//make sure date selected is earlier than yesterday
 	if ($travel_date < $today) {
 		form_set_error('gtfs_manager_search_date', t('Please choose a travel date in the future.'));
 	}
 	// make sure return date is later than travel date
-	if ($form_state['values']['gtfs_manager_trip_type_radio'] == 0) {
-		$return_date = new DateTime($form_state['values']['gtfs_manager_return_date']);
+	$return_date = strtotime($$form_state['values']['gtfs_manager_return_date']);
+	if ($form_state['values']['gtfs_manager_trip_type_radio'] == 0 && $return_date) {
 		if ($return_date < $travel_date) {
 			form_set_error('gtfs_manager_return_date', t('Please choose a return date that is after the date that you leave.'));
 		}
@@ -3562,96 +3563,102 @@ SQL;
 
 		$query =<<<SQL
 select s.stop_name as departing_stop_name
-  ,  s.sid as departing_sid
-  ,  st.departure_time
-  ,  r.route_long_name as departing_route_long_name
-  ,  a.agency_name as departing_agency_name
-  ,  st.stop_sequence
-  ,  s2.sid as arrival_sid
-  ,  st2.arrival_time
-  ,  s2.stop_name as arrival_stop_name
-  ,  r2.route_long_name as arrival_route_long_name
-  ,  a2.agency_name as arrival_agency_name
-  ,  st2.stop_sequence
-  ,  ifnull((select s3.stop_name from
-        stops s3
-        join stop_times st3
-          on st3.sid = s3.sid
-        join trips t3
-          on t3.tid = st3.tid
-        join routes r3
-          on r3.rid = t3.rid
-        where r3.rid = r.rid
-        and st3.stop_sequence = st.stop_sequence + 1
-     ), 'last-stop') as first_next
+ ,  s.sid as departing_sid
+ ,  st.departure_time
+ ,  r.route_long_name as departing_route_long_name
+ ,  a.agency_name as departing_agency_name
+ ,  st.stop_sequence
+ ,  s2.sid as arrival_sid
+ ,  st2.arrival_time
+ ,  s2.stop_name as arrival_stop_name
+ ,  r2.route_long_name as arrival_route_long_name
+ ,  a2.agency_name as arrival_agency_name
+ ,  st2.stop_sequence
+ ,  ifnull((select s3.stop_name from
+       stops s3
+       join stop_times st3
+         on st3.sid = s3.sid
+       join trips t3
+         on t3.tid = st3.tid
+       join routes r3
+         on r3.rid = t3.rid
+       where r3.rid = r.rid
+       and st3.stop_sequence = st.stop_sequence + 1
+limit 1
+    ), 'last-stop') as first_next
 ,  ifnull((select s3.stop_name from
-        stops s3
-        join stop_times st3
-          on st3.sid = s3.sid
-        join trips t3
-          on t3.tid = st3.tid
-        join routes r3
-          on r3.rid = t3.rid
-        where r3.rid = r.rid
-        and st3.stop_sequence = st.stop_sequence - 1
-     ), 'first-stop') as first_prev
-     ,  ifnull((select s4.stop_name from
-        stops s4
-        join stop_times st4
-          on st4.sid = s4.sid
-        join trips t4
-          on t4.tid = st4.tid
-        join routes r4
-          on r4.rid = t4.rid
-        where r4.rid = r2.rid
-        and st4.stop_sequence = st2.stop_sequence + 1
-     ), 'last-stop') as second_next
-     ,  ifnull((select s4.stop_name from
-        stops s4
-        join stop_times st4
-          on st4.sid = s4.sid
-        join trips t4
-          on t4.tid = st4.tid
-        join routes r4
-          on r4.rid = t4.rid
-        where r4.rid = r2.rid
-        and st4.stop_sequence = st2.stop_sequence - 1
-     ), 'first-stop') as second_prev
+       stops s3
+       join stop_times st3
+         on st3.sid = s3.sid
+       join trips t3
+         on t3.tid = st3.tid
+       join routes r3
+         on r3.rid = t3.rid
+       where r3.rid = r.rid
+       and st3.stop_sequence = st.stop_sequence - 1
+limit 1
+    ), 'first-stop') as first_prev
+    ,  ifnull((select s4.stop_name from
+       stops s4
+join stop_times st4
+ on st4.sid = s4.sid
+join trips t4
+ on t4.tid = st4.tid
+join routes r4
+         on r4.rid = t4.rid
+where r4.rid = r2.rid
+and st4.stop_sequence = st2.stop_sequence + 1
+limit 1
+    ), 'last-stop') as second_next
+    ,  ifnull((select s4.stop_name from
+       stops s4
+       join stop_times st4
+         on st4.sid = s4.sid
+       join trips t4
+         on t4.tid = st4.tid
+       join routes r4
+         on r4.rid = t4.rid
+       where r4.rid = r2.rid
+       and st4.stop_sequence = st2.stop_sequence - 1
+limit 1
+    ), 'first-stop') as second_prev
 from
- stops s
+stops s
 join stop_times st
-  on st.sid = s.sid
+ on st.sid = s.sid
 join trips t
-  on t.tid = st.tid
+ on t.tid = st.tid
 join calendar c
-  on c.service_id = t.service_id
+ on c.service_id = t.service_id
 join routes r
-  on r.rid = t.rid
+ on r.rid = t.rid
 join agencies a
-  on a.aid = r.aid
+ on a.aid = r.aid
 inner join stops s2
-  on s2.stop_name = s.stop_name
+ on s2.stop_name = s.stop_name
 join stop_times st2
-  on st2.sid = s2.sid
+ on st2.sid = s2.sid
 join trips t2
-  on t2.tid = st2.tid
+ on t2.tid = st2.tid
 join routes r2
-  on r2.rid = t2.rid
+ on r2.rid = t2.rid
 join agencies a2
-  on a2.aid = r2.aid
+ on a2.aid = r2.aid
 where r2.rid != r.rid
 and time(st.departure_time) > time(st2.arrival_time)
 and not exists(select 1 from transfers where to_stop_id = st.sid and from_stop_id = st2.sid)
 having first_next != second_next
-  and first_prev != second_next
+ and first_prev != second_next
 order by departing_stop_name
-limit 45
+limit 45;
 SQL;
 
 		
 
 		$transfers['data'] = array();
 		$transfers['options'] = array();
+		
+		$result = db_query($query);
 
 		$i =1;
 		if(isset($result) && is_object($result)){
@@ -4310,119 +4317,101 @@ SQL;
 		unset($element['time']['#description']);
 		return $element;
 	}
-
-	function results_one_way($o, $opc, $d, $dpc, $epoc){
-		//run the different searches
-		$num_results = 0;
-
-		$args = array(
-				'o' => $o,
-				'opc' => $opc,
-				'd' => $d,
-				'dpc' => $dpc,
-				'epoc' => $epoc,
-				'date' => date('Y-m-d', $epoc),
-				'dayname' => strtolower(date('l', $epoc)),
-		);
-
-		$results = array();
-		fetch_p2p_results($results, $args);
-		fetch_ot_results($results, $args);
-
-		/*
-		 if (!empty($origin_centroid) && !empty($destination_centroid)) {
-		//search for a result within a single service area
-		fetch_one_service_area_results($form, $form_state, $results, $args, $origin_centroid, $destination_centroid);
-		//search for a result within service areas that overlap
-		//fetch_service_area_to_service_area_results($form, $form_state, $results, $args, $origin_centroid, $destination_centroid);
-		//search for a result for service area to point to point to service area transfer x 2
-		//fetch_service_area_to_point_to_point_to_service_area_results($form, $form_state, $results, $args, $origin_centroid, $destination_centroid);
-		} elseif (!empty($origin_centroid)) {
-		// search for a result starting in a service area type route and ending in a point to point
-		fetch_service_area_to_point_to_point_results($form, $form_state, $results, $args, $origin_centroid);
-		} elseif (!empty($destination_centroid)) {
-		// search for a result starting in a point to point type route and ending in a service area
-		//fetch_service_area_to_point_to_point_results($form, $form_state, $results, $args, NULL, $destination_centroid);
-		}
-		*/
-		//run the same searches for the return trip
-		//   if ($form_state['values']['gtfs_manager_trip_type_radio'] == 0
-				//       && !empty($form_state['values']['gtfs_manager_return_date'])) {
-
-		//     $return_results = array();
-
-		//     $return_date_strings =
-		//       explode('-', $form_state['values']['gtfs_manager_return_date']);
-
-		//     $return_args = array(
-				//       ':o'   => $destination_stop_name,
-				//       ':opc' => $destination_province_code,
-				//       ':d'   => $origin_stop_name,
-				//       ':dpc' => $origin_province_code,
-				//       ':epoc' => strtotime($form_state['values']['gtfs_manager_return_date']),
-				//       ':date' => $return_date_strings[0] . '-' . $return_date_strings[1] . '-' . $return_date_strings[2],
-				//     );
-
-		//     fetch_point_to_point_results($form, $form_state, $return_results, $return_args);
-		//     fetch_one_transfer_results($form, $form_state, $return_results, $return_args);
-		//     $variables['return_results'] = $return_results;
-
-		//     $num_results += count($variables['return_results']);
-
-		//   }
-
-		$variables['results'] = $results;
-		//capture user search information
-		$return_num_results = count($variables['results']);
-
-		capture_search_data($args, $num_results, $return_num_results);
-
-		if ($results) {
-			return theme('display_search_results', $variables);
-		} else {
-			return 'Your search returned no results';
-		}
+	
+	function results_page_one_way(){
+		drupal_add_js(drupal_get_path('module', 'gtfs_manager')  . '/search_results.js');
+		return '';	
+	}
+	
+	function results_page_return_trip(){
+		drupal_add_js(drupal_get_path('module', 'gtfs_manager')  . '/search_results.js');
+		return '';
 	}
 
-	function results_return_trip($o, $opc, $d, $dpc, $epoc, $repoc){
-		$num_results = 0;
+	function results_query_one_way($o, $opc, $d, $dpc, $epoc){
+		
+		if($epoc >= strtotime("today")){
+			//run the different searches
+			$num_results = 0;
+	
+			$args = array(
+					'o' => $o,
+					'opc' => $opc,
+					'd' => $d,
+					'dpc' => $dpc,
+					'epoc' => $epoc,
+					'date' => date('Y-m-d', $epoc),
+					'dayname' => strtolower(date('l', $epoc)),
+			);
+	
+			$results = array();
+			fetch_p2p_results($results, $args);
+			fetch_ot_results($results, $args);
+	
+			$variables['results'] = $results;
+			//capture user search information
+			$return_num_results = count($variables['results']);
+	
+			capture_search_data($args, $num_results, $return_num_results);
+	
+			if ($results) {
+				echo theme('display_search_results', $variables);
+			} else {
+				echo 'Your search returned no results';
+			}
+		}else{
+			echo '<div class="messages errors"><ul><li><i class="icon-exclamation-sign"></i> Departure date may not be in the past</li></ul></div>';
+		}
+		
+	}
 
-		$args = array(
-				'o' => $o,
-				'opc' => $opc,
-				'd' => $d,
-				'dpc' => $dpc,
-				'epoc' => $epoc,
-				'date' => date('Y-m-d', $epoc),
-				'dayname' => strtolower(date('l', $epoc)),
-		);
-
-		$results = array();
-		fetch_p2p_results($results, $args);
-		fetch_ot_results($results, $args);
+	function results_query_return_trip($o, $opc, $d, $dpc, $epoc, $repoc){
 		
-		$num_return_results = 0;
+		if($epoc >= strtotime("today") && $epoc <= $repoc){
 		
-		$return_args = array(
-				'o' => $d,
-				'opc' => $dpc,
-				'd' => $o,
-				'dpc' => $opc,
-				'epoc' => $repoc,
-				'date' => date('Y-m-d', $repoc),
-				'dayname' => strtolower(date('l', $repoc)),
-		);
-		
-		$return_results = array();
-		fetch_p2p_results($return_results, $return_args);
-		fetch_ot_results($return_results, $return_args);
-		$variables['results'] = $results;
-		$variables['return_results'] = $return_results;
-		
-		if ($results && $return_results) {
-			return theme('display_search_results', $variables);
-		} else {
-			return 'Your search returned no results';
+			$num_results = 0;
+	
+			$args = array(
+					'o' => $o,
+					'opc' => $opc,
+					'd' => $d,
+					'dpc' => $dpc,
+					'epoc' => $epoc,
+					'date' => date('Y-m-d', $epoc),
+					'dayname' => strtolower(date('l', $epoc)),
+			);
+	
+			$results = array();
+			fetch_p2p_results($results, $args);
+			fetch_ot_results($results, $args);
+			
+			$num_return_results = 0;
+			
+			$return_args = array(
+					'o' => $d,
+					'opc' => $dpc,
+					'd' => $o,
+					'dpc' => $opc,
+					'epoc' => $repoc,
+					'date' => date('Y-m-d', $repoc),
+					'dayname' => strtolower(date('l', $repoc)),
+			);
+			
+			$return_results = array();
+			fetch_p2p_results($return_results, $return_args);
+			fetch_ot_results($return_results, $return_args);
+			$variables['results'] = $results;
+			$variables['return_results'] = $return_results;
+			
+			if ($results && $return_results) {
+				echo theme('display_search_results', $variables);
+			} else {
+				echo 'Your search returned no results';
+			}
+		}else if($epoc < strtotime("today")){
+			echo '<div class="messages errors"><ul><li><i class="icon-exclamation-sign"></i> Departure and return dates may not be in the past</li></ul></div>';
+		}else{
+			echo '<div class="messages errors"><ul><li><i class="icon-exclamation-sign"></i> Return date cannot be earlier than departure date</li></ul></div>';
 		}
 	}
 
