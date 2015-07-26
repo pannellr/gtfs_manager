@@ -20,6 +20,7 @@
    </thead>
    </tbody>
 
+   <?php if (sizeof($agencies) > 0 ) { ?>
    <?php foreach ($agencies as $agency) { ?>
      <tr>
      	<td><?php print stripslashes($agency->agency_name); ?></td>
@@ -30,6 +31,7 @@
    		<td><?php print $agency->features; ?></td>
    		<td><?php print implode('<br />', $agency->options); ?></td>
    	</tr>
+   <?php } ?>
    <?php } ?>
     </tbody>
   </table>

@@ -492,7 +492,7 @@ function gtfs_manager_menu() {
 			'file' => 'route.pages.inc',
 	);
 
-	// Delete an agency
+	// Delete a route
 	$items['route/%route/delete'] = array(
 			'title' => 'Delete',
 			'page callback' => 'drupal_get_form',
@@ -504,37 +504,74 @@ function gtfs_manager_menu() {
 			'file' => 'route.pages.inc',
 	);
 
-	//Add a stop for given route
-	$items['route/%route/stop/add'] = array(
-			'title callback' => t('New Stop'),
+	//
+	//Trips menus added by Rickey April 2014 
+	//
+
+	//Add a trip to a route
+	$items['route/%route/trip/add'] = array(
+			'title callback' => t('New Trip'),
 			'title arguments' => array(1),
 			'page callback' => 'drupal_get_form',
-			'page arguments' => array('gtfs_manager_stop_form',
-					entity_get_controller('stop')->create(), 1),
+			'page arguments' => array('gtfs_manager_trip_form', entity_get_controller('trip')->create(), 1),
 			'weight' => 1,
 			'menu_name' => 'gtfs_manager',
 			'access arguments' => array('administer gtfs'),
-			'file' => 'stop.pages.inc',
+			'file' => 'trip.pages.inc',
 	);
 
-	//Show and agencies routes
-	$items['route/%route/stops'] = array(
-			'title callback' => 'route_page_title',
+	$items['trip/%trip/edit'] = array(
+			'title' => 'Edit',
+			'page callback' => 'trip_page_edit',
+			'page arguments' => array(1),
+			'access arguments' => array('administer gtfs'),
+			'weight' => 0,
+			'type' => MENU_LOCAL_TASK,
+			'context' => MENU_CONTEXT_PAGE | MENU_CONTEXT_INLINE,
+			'file' => 'trip.pages.inc',
+	);
+
+	//Add a trip to a route
+	$items['trip/%trip/stop_times/add'] = array(
+			'title callback' => t('Add stop times to trip'),
 			'title arguments' => array(1),
-			'page callback' => 'gtfs_manager_route_stops_view',
+			'page callback' => 'drupal_get_form',
+			'page arguments' => array('gtfs_manager_stop_time_form', entity_get_controller('stop_time')->create(), 1),
+			'weight' => 1,
+			'menu_name' => 'gtfs_manager',
+			'access arguments' => array('administer gtfs'),
+			'file' => 'stop_time.pages.inc',
+	);
+
+	//Edit stop time
+	$items['trip/%trip/stop_time/%stop'] = array(
+			'title' => t('Edit stop time'),
+			'page callback' => 'stop_time_page_edit',
+			'page arguments' => array(1, 3),
+			'weight' => 1,
+			'menu_name' => 'gtfs_manager',
+			'access arguments' => array('administer gtfs'),
+			'file' => 'stop_time.pages.inc',
+	);
+
+	$items['trip/%trip/stop/%stop/delete'] = array(
+			'title' => 'Delete',
+			'page callback' => 'drupal_get_form',
+			'page arguments' => array('stop_time_delete_confirm', 1, 3),
+			'access arguments' => array('administer gtfs'),
+			'weight' => 1,
+			'type' => MENU_LOCAL_TASK,
+			'context' => MENU_CONTEXT_INLINE,
+			'file' => 'stop_time.pages.inc',
+	);
+
+	$items['route/%route/trips'] = array(
+			'title callback' => 'trip_page_title',
+			'title arguments' => array(1),
+			'page callback' => 'gtfs_manager_route_trips_view',
 			'page arguments' => array(1),
 			'access callback' => TRUE,
-			'file' => 'stop.pages.inc',
-	);
-
-	//Upload route stops
-	$items['route/%route/upload'] = array(
-			'title' => t('Upload Stops'),
-			'page callback' => 'drupal_get_form',
-			'page arguments' => array('gtfs_manager_route_stops_upload_form', 1),
-			'access arguments' => array('administer gtfs'),
-			'menu_name' => 'gtfs_manager',
-			'file' => 'stop.pages.inc',
+			'file' => 'trip.pages.inc',
 	);
 
 	//Add a feature for a given route
@@ -564,6 +601,28 @@ function gtfs_manager_menu() {
 			'file' => 'stop.pages.inc',
 	);
 
+	// Add stop
+	$items['stop/add'] = array(
+			'title' => t('Add a new stop'),
+			'title callback' => 'check_plain',
+			'page callback' => 'drupal_get_form',
+			'page arguments' => array('gtfs_manager_stop_form', entity_get_controller('stop')->create()),
+			'weight' => 1,
+			'menu_name' => 'gtfs_manager',
+			'access arguments' => array('administer gtfs'),
+			'file' => 'stop.pages.inc',
+	);
+
+	//Show and agencies routes
+	$items['stops'] = array(
+			'title callback' => t('Showing all stops'),
+			'title arguments' => 'check_plain',
+			'page callback' => 'gtfs_manager_stops_view',
+			'page arguments' => array(1),
+			'access callback' => TRUE,
+			'file' => 'stop.pages.inc',
+	);
+
 	// Delete a stop
 	$items['stop/%stop/delete'] = array(
 			'title' => 'Delete',
@@ -576,7 +635,7 @@ function gtfs_manager_menu() {
 			'file' => 'stop.pages.inc',
 	);
 
-	// Delete a stop
+	// add calendar exception
 	$items['route/%/stop/%/calendar_date/add'] = array(
 			'title' => 'Add Exception',
 			'page callback' => 'drupal_get_form',
@@ -683,44 +742,103 @@ function gtfs_manager_menu() {
 			'type' => MENU_NORMAL_ITEM,
 			'file' => 'transportation_type.pages.inc',
 	);
-
-	//Transfer report
-	$items['admin/config/gtfs_manager/transfer/add'] = array(
-			'title' => 'Select Transfers',
-			'description' => 'Review and add transfer suggestions',
+	
+	$items['admin/config/gtfs_manager/transfer'] = array(
+			'title' => 'Transfers',
+			'description' => 'Review and accept transfer suggestions',
 			'page callback' => 'drupal_get_form',
-			'page arguments' => array('gtfs_manager_transfer_form', gtfs_manager_suggest_transfers()),
+			'page arguments' => array('gtfs_manager_approved_transfers'),
 			'access arguments' => array('administer gtfs'),
 			'type' => MENU_NORMAL_ITEM,
 	);
-
-	// delete a service feature
-	$items['transfer/%/%/delete'] = array(
-			'title' => t('Delete transfer'),
+	
+	//Transfer report
+	$items['admin/config/gtfs_manager/transfer/approved'] = array(
+			'title' => 'Approved',
+			'description' => 'List all transfers that have been previously approved',
+			'type' => MENU_DEFAULT_LOCAL_TASK,
+			'weight' => 0,
+	);
+	
+	//Transfer report
+	$items['admin/config/gtfs_manager/transfer/suggested'] = array(
+			'title' => 'Suggested',
+			'description' => 'List and activate or ignore suggested transfers',
 			'page callback' => 'drupal_get_form',
-			'page arguments' => array('gtfs_manager_transfer_delete_confirm', 1, 2),
-			'weight' => 1,
-			'menu_name' => 'gtfs_manager',
+			'page arguments' => array('gtfs_manager_suggested_transfers'),
+			'access arguments' => array('administer gtfs'),
 			'type' => MENU_LOCAL_TASK,
-			'context' => MENU_CONTEXT_INLINE,
+			'weight' => 1,
+	);
+	
+	//Transfer report
+	$items['admin/config/gtfs_manager/transfer/invalid'] = array(
+			'title' => 'Invalid',
+			'description' => 'List all transfers that have been marked as invalid',
+			'page callback' => 'drupal_get_form',
+			'page arguments' => array('gtfs_manager_invalid_transfers'),
 			'access arguments' => array('administer gtfs'),
+			'type' => MENU_LOCAL_TASK,
+			'weight' => 2,
+	);
+	
+	//Transfer report
+	$items['admin/config/gtfs_manager/transfer/forced'] = array(
+			'title' => 'Forced',
+			'description' => 'List all transfers that have been forced to appear',
+			'page callback' => 'drupal_get_form',
+			'page arguments' => array('gtfs_manager_forced_transfers'),
+			'access arguments' => array('administer gtfs'),
+			'type' => MENU_LOCAL_TASK,
+			'weight' => 3,
+	);
+	
+	//Transfer report
+	$items['admin/config/gtfs_manager/transfer/ignored'] = array(
+			'title' => 'Ignored',
+			'description' => 'List all transfers that have been previously ignored',
+			'page callback' => 'drupal_get_form',
+			'page arguments' => array('gtfs_manager_ignored_transfers'),
+			'access arguments' => array('administer gtfs'),
+			'type' => MENU_LOCAL_TASK,
+			'weight' => 4,
 	);
 
 	// delete a service feature
-	$items['transfer/%/%/activate'] = array(
-			'title' => t('Activate transfer'),
-			'page callback' => 'drupal_get_form',
-			'page arguments' => array('gtfs_manager_switch_transfer', 1, 2, TRUE),
+	$items['transfer/%/remove'] = array(
+			'title' => t('Remove transfer'),
+			'page callback' => 'gtfs_manager_transfer_remove',
+			'page arguments' => array(1),
 			'weight' => 1,
 			'menu_name' => 'gtfs_manager',
 			'access arguments' => array('administer gtfs'),
 	);
 
 	// delete a service feature
-	$items['transfer/%/%/ignore'] = array(
+	$items['transfer/%/approve'] = array(
+			'title' => t('Activate transfer'),
+			'page callback' => 'gtfs_manager_transfer_approve',
+			'page arguments' => array(1),
+			'weight' => 1,
+			'menu_name' => 'gtfs_manager',
+			'access arguments' => array('administer gtfs'),
+	);
+
+	// delete a service feature
+	$items['transfer/%/ignore'] = array(
 			'title' => t('Ignore transfer'),
-			'page callback' => 'drupal_get_form',
-			'page arguments' => array('gtfs_manager_switch_transfer', 1, 2, FALSE),
+			'page callback' => 'gtfs_manager_transfer_ignore',
+			'page arguments' => array(1),
+			'weight' => 1,
+			'menu_name' => 'gtfs_manager',
+			'access arguments' => array('administer gtfs'),
+	);
+	
+	// delete a service feature
+	$items['transfer/%/force'] = array(
+			'title' => t('Force transfer'),
+			'page callback' => 'gtfs_manager_transfer_force',
+			'page arguments' => array(1),
 			'weight' => 1,
 			'menu_name' => 'gtfs_manager',
 			'access arguments' => array('administer gtfs'),
@@ -887,8 +1005,7 @@ function gtfs_manager_menu() {
 			'access callback' => TRUE,
 			'type' => MENU_CALLBACK,
 	);
-
-
+	
 	$items['stopname/validate'] = array(
 			'page callback' => 'gtfs_manager_stop_name_validate',
 			'type' => MENU_CALLBACK,
@@ -929,6 +1046,9 @@ function gtfs_manager_theme() {
 			'gtfs_manager_route_stops_view' => array(
 					'template'  => 'gtfs-manager-route-stops-view',
 			),
+			'gtfs_manager_route_trips_view' => array(
+					'template' => 'gtfs-manager-route-trips-view',
+			),
 			'display_search_results' => array(
 					'template' => 'gtfs-manager-search-results',
 			),
@@ -944,8 +1064,8 @@ function gtfs_manager_theme() {
 			'gtfs_manager_agency_fares_matrix_form' => array(
 					'render element' => 'form',
 			),
-			'transfer_report' => array(
-					'template' => 'gtfs-manager-transfer-report',
+			'active_transfer_report' => array(
+					'template' => 'gtfs-manager-active-transfer-report',
 			),
 			'gtfs_manager_agencies' => array(
 					'template' => 'gtfs-manager-all-agencies-view',
@@ -1200,11 +1320,11 @@ function template_preprocess_display_search_results(&$variables) {
 
 					$first_leg = empty($result->first_leg_price)
 					? l(t('$ to ') . $result->from_stop_name, $result->departure_agency_fare_url, array('external' => TRUE))
-					: money_format('$%i', (float)$result->first_leg_price);
+					: '$' . money_format('%i', (float)$result->first_leg_price);
 
 					$second_leg = ($result->second_leg_price == null)
 					? l(t('$ to ') . $result->destination_city, $result->destination_agency_fare_url, array('external' => TRUE))
-					: money_format('$%i', (float)$result->second_leg_price);
+					: '$' . money_format('%i', (float)$result->second_leg_price);
 
 
 					$result->price = $first_leg . '<br />' . $second_leg;
@@ -1215,61 +1335,47 @@ function template_preprocess_display_search_results(&$variables) {
 
 				$result->features = features_for($result);
 
-				$result->transfer = t('Transfer in @t. <em>Layover: @l</em>', array('@t' => $result->to_stop_name, '@l' => $result->layover_duration));
-
-				if ($result->departure_transportation_type == $result->destination_transportation_type) {
-				   $result->transportation_type = t('@t1', array('@t1' => $result->departure_transportation_type));
-				} else {
-				   $result->transportation_type = t('@t1 to @t2', array(
-									'@t1' => $result->departure_transportation_type, 
-								      	'@t2' => $result->destination_transportation_type,
-								      )
-								);
-				}
-				
-				if ($result->departure_agency_name == $result->destination_agency_name) {
-				   $result->provider = l($result->departure_agency_name, $result->departure_agency_url);
-				} else {
-				  $result->provider = l($result->departure_agency_name, $result->departure_agency_url) . ' <br /> ' . l($result->destination_agency_name, $result->destination_agency_url);
-				}
-				
+				$result->transfer = t('1 Transfer in @t. <em>Layover: @l</em>', array('@t' => $result->to_stop_name, '@l' => $result->layover_duration));
+				$result->transportation_type = t('@t1 to @t2', array('@t1' => $result->departure_transportation_type, '@t2' => $result->destination_transportation_type,));
+				$result->provider = l($result->departure_agency_name, $result->departure_agency_url) . ' to ' . l($result->destination_agency_name, $result->destination_agency_url);
 
 				$result->more_info = '<table><tr><td>'
 						. $result->departure_agency_name
 						. '</td>'
-						. '<td><b>Departs from:'
-						. $result->departure_description
-						. '</td>'
-						. '<td>'
-						. $result->departure_agency_info
-						. '</td>'
-						. '<td>'
-						. $result->departure_agency_phone
-						. '</td>'
-						. '<td>'
-						. $result->departure_agency_email
-						. '</td>'
-						. '</tr>'
-						. '<tr>'
-						. '<td>'
-						. $result->destination_agency_name																	   . '</td>'
-						. '<td><b>Arrives at:'
-						. $result->destination_description
-						. '</td>'
-						. '<td>'
-						. $result->destination_agency_info
-						. '</td>'
-						. '<td>'
-						. $result->destination_agency_phone
-						. '</td>'
-						. '<td>'
-						. $result->destination_agency_email
-						. '</td></tr></table>';
+								. '<td><b>Departs from:'
+										. $result->departure_description
+										. '</td>'
+												. '<td>'
+														. $result->departure_agency_info
+														. '</td>'
+																. '<td>'
+																		. $result->departure_agency_phone
+																		. '</td>'
+																				. '<td>'
+																						. $result->departure_agency_email
+																						. '</td>'
+																								. '</tr>'
+																										. '<tr>'
+																												. '<td>'
+																														. $result->destination_agency_name
+																														. '</td>'
+																																. '<td><b>Arrives at:'
+																																		. $result->destination_description
+																																		. '</td>'
+																																				. '<td>'
+																																						. $result->destination_agency_info
+																																						. '</td>'
+																																								. '<td>'
+																																										. $result->destination_agency_phone
+																																										. '</td>'
+																																												. '<td>'
+																																														. $result->destination_agency_email
+																																														. '</td></tr></table>';
 
 			} else {
 
 				$result->price = empty($result->price)
-				? l(t('Check Price'), $result->agency_fare_url, array('external' => TRUE))
+				? l(t('Check Price'), $result->agency_fare_url, array('attributes' => array('target' => '_blank'), 'external' => TRUE))
 				: money_format('$%i', (float)$result->price);
 
 				$result->features = features_for($result);
@@ -1295,7 +1401,7 @@ function template_preprocess_display_search_results(&$variables) {
 																												. '</td>'
 																														. '</tr></table>';
 
-				$result->transfer = '';
+				$result->transfer = 0;
 				$result->provider = l($result->departure_agency_name, $result->departure_agency_url);
 			}
 		}
@@ -1319,131 +1425,122 @@ function template_preprocess_display_search_results(&$variables) {
 	  //  }
 			//}
 
-			if ($result->search_type == 'one_transfer') {
-
-				$layover_arrival = new DateTime($result->departure_transfer_departure_time);
-				$layover_departure = new DateTime($result->destination_transfer_arrival_time);
-				$layover_interval = $layover_arrival->diff($layover_departure);
-				$result->layover_duration = $layover_interval->format('%h hr(s) %i min(s)');
-
-				$first_leg = '';
-				$second_leg = '';
-
-				//if either or both of the prices are not set
-				if (empty($result->first_leg_price) || empty($result->second_leg_price)) {
-
-					$first_leg = empty($result->first_leg_price)
-					? l(t('$ to ') . $result->from_stop_name, $result->departure_agency_fare_url, array('external' => TRUE))
-					: money_format('$%i', (float)$result->first_leg_price);
-
-					$second_leg = ($result->second_leg_price == null)
-					? l(t('$ to ') . $result->destination_city, $result->destination_agency_fare_url, array('external' => TRUE))
-					: money_format('$%i', (float)$result->second_leg_price);
-
-
-					$result->price = $first_leg . '<br />' . $second_leg;
-
-				} else {
-					$result->price = money_format('$%i', ((float)$result->second_leg_price + (float)$result->first_leg_price));
-				}
-
-				$result->features = features_for($result);
-
-
-				$result->transfer = t('Transfer in @t. <em>Layover: @l</em>', array('@t' => $result->destination_city, '@l' => $result->layover_duration));
-
-
-				if ($result->departure_transportation_type == $result->destination_transportation_type) {
-				   $result->transportation_type = t('@t1', array('@t1' => $result->departure_transportation_type));
-				} else {
-				  $result->transportation_type = t('@t1 to @t2', 
-				  			       	 	array('@t1' => $result->departure_transportation_type, 
-							       	              '@t2' => $result->destination_transportation_type,
-								 	      )
-								 );
-				}
-
-				$result->more_info = '<table><tr><td>'
-						. $result->departure_agency_name
-						. '</td>'
-						. '<td><b>Departs from: </b>'
-						. $result->departure_description
-						. '</td>'
-						. '<td><b>Departs from: </b>'
-						. $result->departure_description
-						. '</td>'
-																. '<td><b>Arrives at: </b>'
-																		. $result->destination_description
-																		. '</td>'
-																				. '<td><b>Arrives at: </b>'
-																						. $result->destination_description
-																						. '</td>'
-																								. '<td>'
-																										. $result->departure_agency_info
-																										. '</td>'
-																												. '<td>'
-																														. $result->departure_agency_phone
-																														. '</td>'
-																																. '<td>'
-																																		. $result->departure_agency_email
-																																		. '</td>'
-																																				. '</tr>'
-																																						. '<tr>'
-																																								. '<td>'
-																																										. $result->destination_agency_name
-																																										. '</td>'
-																																												. '<td><b>Departs from: </b>'
-																																														. $result->departure_description
-																																														. '</td>'
-																																																. '<td><b>Arrives at: </b>'
-																																																		. $result->destination_description
-																																																		. '</td>'
-																																																				. '<td>'
-																																																						. $result->destination_agency_info
-																																																						. '</td>'
-																																																								. '<td>'
-																																																										. $result->destination_agency_phone
-																																																										. '</td>'
-																																																												. '<td>'
-																																																														. $result->destination_agency_email
-																																																														. '</td></tr></table>';
-
-
-				$result->provider = l($result->departure_agency_name, $result->departure_agency_url) . ' to ' . l($result->destination_agency_name, $result->destination_agency_url);
-
-			} else {
-
-				$result->price = empty($result->price)
-				? l(t('View fares'), $result->agency_fare_url, array('external' => TRUE))
-				: money_format('$%i', (float)$result->price);
-
-				$result->features = features_for($result);
-
-				$result->more_info = '<table><tr>'
-						. '<td>'
-								. $result->departure_agency_name
-								. '</td>'
-										. '<td><b>Departs from: </b>'
-												. $result->departure_description
-												. '</td>'
-														. '<td><b>Arrives at: </b>'
-																. $result->destination_description
-																. '</td>'
-																		. '<td>'
-																				. $result->agency_info
-																				. '</td>'
-																						. '<td>'
-																								. $result->agency_phone
-																								. '</td>'
-																										. '<td>'
-																												. $result->agency_email
-																												. '</td>'
-																														. '</tr></table>';
-
-
-				$result->transfer = 0;
-				$result->provider = l($result->departure_agency_name, $result->departure_agency_url);
-			}
+		  if ($result->search_type == 'one_transfer') {
+		    
+		    $layover_arrival = new DateTime($result->departure_transfer_departure_time);
+		    $layover_departure = new DateTime($result->destination_transfer_arrival_time);
+		    $layover_interval = $layover_arrival->diff($layover_departure);
+		    $result->layover_duration = $layover_interval->format('%h hr(s) %i min(s)');
+		    
+		    $first_leg = '';
+		    $second_leg = '';
+		    
+		    //if either or both of the prices are not set
+		    if (empty($result->first_leg_price) || empty($result->second_leg_price)) {
+		      
+		      $first_leg = empty($result->first_leg_price)
+			? l(t('$ to ') . $result->from_stop_name, $result->departure_agency_fare_url, array('external' => TRUE))
+			: money_format('$%i', (float)$result->first_leg_price);
+		      
+		      $second_leg = ($result->second_leg_price == null)
+			? l(t('$ to ') . $result->destination_city, $result->destination_agency_fare_url, array('external' => TRUE))
+			: money_format('$%i', (float)$result->second_leg_price);
+		      
+		      
+		      $result->price = $first_leg . '<br />' . $second_leg;
+		      
+		    } else {
+		      $result->price = money_format('%i', ((float)$result->second_leg_price + (float)$result->first_leg_price));
+		    }
+		    
+		    $result->features = features_for($result);
+		    
+		    
+		    $result->transfer = t('1 Transfer in @t. <em>Layover: @l</em>', array('@t' => $result->destination_city, '@l' => $result->layover_duration));
+		    
+		    $result->transportation_type = t('@t1 to @t2', array('@t1' => $result->departure_transportation_type, '@t2' => $result->destination_transportation_type,));
+		    
+		    $result->more_info = '<table><tr><td>'
+		      . $result->departure_agency_name
+		      . '</td>'
+		      . '<td><b>Departs from: </b>'
+		      . $result->departure_description
+		      . '</td>'
+		      . '<td><b>Departs from: </b>'
+		      . $result->departure_description
+		      . '</td>'
+		      . '<td><b>Arrives at: </b>'
+		      . $result->destination_description
+		      . '</td>'
+		      . '<td><b>Arrives at: </b>'
+		      . $result->destination_description
+		      . '</td>'
+		      . '<td>'
+		      . $result->departure_agency_info
+		      . '</td>'
+		      . '<td>'
+		      . $result->departure_agency_phone
+		      . '</td>'
+		      . '<td>'
+		      . $result->departure_agency_email
+		      . '</td>'
+		      . '</tr>'
+		      . '<tr>'
+		      . '<td>'
+		      . $result->destination_agency_name
+		      . '</td>'
+		      . '<td><b>Departs from: </b>'
+		      . $result->departure_description
+		      . '</td>'
+		      . '<td><b>Arrives at: </b>'
+		      . $result->destination_description
+		      . '</td>'
+		      . '<td>'
+		      . $result->destination_agency_info
+		      . '</td>'
+		      . '<td>'
+		      . $result->destination_agency_phone
+		      . '</td>'
+		      . '<td>'
+		      . $result->destination_agency_email
+		      . '</td></tr></table>';
+		    
+		    
+		    $result->provider = l($result->departure_agency_name, $result->departure_agency_url) . ' to ' . l($result->destination_agency_name, $result->destination_agency_url);
+		    
+		  } else {
+		    
+		    $result->price = empty($result->price)
+		      ? l(t('View fares'), $result->agency_fare_url, array('external' => TRUE))
+		      : money_format('$%i', (float)$result->price);
+		    
+		    $result->features = features_for($result);
+		    
+		    $result->more_info = '<table><tr>'
+		      . '<td>'
+		      . $result->departure_agency_name
+		      . '</td>'
+		      . '<td><b>Departs from: </b>'
+		      . $result->departure_description
+		      . '</td>'
+		      . '<td><b>Arrives at: </b>'
+		      . $result->destination_description
+		      . '</td>'
+		      . '<td>'
+		      . $result->agency_info
+		      . '</td>'
+		      . '<td>'
+		      . $result->agency_phone
+		      . '</td>'
+		      . '<td>'
+		      . $result->agency_email
+		      . '</td>'
+		      . '</tr></table>';
+		    
+		    
+		    $result->transfer = 0;
+		    $result->provider = l($result->departure_agency_name, $result->departure_agency_url);
+		  }
 		}
 	}
 }
@@ -1547,27 +1644,27 @@ function process_results(&$results) {
 * preprocesses view data for and agency's routes
 */
 function template_preprocess_gtfs_manager_agency_routes(&$variables) {
-	//add features to each row
-	foreach ($variables['routes'] as $route) {
-		$route->features = fetch_features('route', $route->rid);
-	}
+  //add features to each row
+  foreach ($variables['routes'] as $route) {
+    $route->features = fetch_features('route', $route->rid);
+  }
 }
 
 function template_preprocess_gtfs_manager_all_features(&$variables) {
-	foreach ($variables['service_features'] as $service_feature) {
-		$image_variables = array(
-				'path' => $service_feature->service_feature_icon_url,
-				'height' => '50px',
-				'width' => '50px',
-		);
-		$service_feature->markup = '<div>'
-				. theme('image', $image_variables)
-				. '<h4>' . $service_feature->service_feature_name
-				. '</h4>' . l('Delete', 'service_feature/' . $service_feature->service_feature_id . '/delete')
-				. '<br />'
-						. l('Edit', 'service_feature/' . $service_feature->service_feature_id . '/edit')
-						. '</div><br />';
-	}
+  foreach ($variables['service_features'] as $service_feature) {
+    $image_variables = array(
+			     'path' => $service_feature->service_feature_icon_url,
+			     'height' => '50px',
+			     'width' => '50px',
+			     );
+    $service_feature->markup = '<div>'
+      . theme('image', $image_variables)
+      . '<h4>' . $service_feature->service_feature_name
+      . '</h4>' . l('Delete', 'service_feature/' . $service_feature->service_feature_id . '/delete')
+      . '<br />'
+      . l('Edit', 'service_feature/' . $service_feature->service_feature_id . '/edit')
+      . '</div><br />';
+  }
 }
 
 /**
@@ -1577,21 +1674,19 @@ function template_preprocess_gtfs_manager_all_features(&$variables) {
  * @param &$variables a reference to varables provided by theme_hook()
  */
 function template_preprocess_gtfs_manager_agency_detail(&$variables) {
-	$variables['classes'] = array('gtfs-manager-agency-detail');
-	$variables['creation_date'] = format_date($variables['agency']->created_at,
-			GTFS_MANAGER_DATE_FORMAT);
-
-	$variables['links'] = $variables['view_routes_link'] = l('View Routes',
-			'agency/' . $variables['agency']->aid . '/routes/view');
-
-	if (user_access('administer gtfs')) {
-
-		$variables['links'] .= ' | '
-				.  l('Edit', 'agency/' . $variables['agency']->aid . '/edit');
-
-		$variables['links'] .= ' | '
-				.  l('Add route', 'agency/' . $variables['agency']->aid . '/route/add');
-	}
+  $variables['classes'] = array('gtfs-manager-agency-detail');
+  $variables['creation_date'] = format_date($variables['agency']->created_at, GTFS_MANAGER_DATE_FORMAT);
+  
+  $variables['links'] = $variables['view_routes_link'] = l('View Routes', 'agency/' . $variables['agency']->aid . '/routes/view');
+  
+  if (user_access('administer gtfs')) {
+    
+    $variables['links'] .= ' | '
+      .  l('Edit', 'agency/' . $variables['agency']->aid . '/edit');
+    
+    $variables['links'] .= ' | '
+      .  l('Add route', 'agency/' . $variables['agency']->aid . '/route/add');
+  }
 }
 
 /**
@@ -1606,8 +1701,8 @@ function template_preprocess_gtfs_manager_route_detail(&$variables) {
 			GTFS_MANAGER_DATE_FORMAT);
 	$variables['transportation_type'] = 'FIXME';
 
-	$variables['links'] = l('View Stops',
-			'route/' . $variables['route']->rid . '/stops/view');
+	$variables['links'] = l('View Trips',
+			'route/' . $variables['trip']->rid . '/trips/view');
 
 
 	if (user_access('administer gtfs')) {
@@ -1615,10 +1710,10 @@ function template_preprocess_gtfs_manager_route_detail(&$variables) {
 				. l('Edit', 'route/' . $variables['route']->rid . '/edit');
 
 		$variables['links'] .= ' | '
-				. l('Add stop', 'route/' . $variables['route']->rid . '/stop/add');
+				. l('Add trip', 'route/' . $variables['route']->rid . '/trip/add');
 
 		$variables['links'] .= ' | '
-				. l('Upload Stops', 'route/' . $variables['route']->rid . '/upload');
+				. l('Upload Trips?', 'route/' . $variables['route']->rid . '/upload');
 
 		$variables['links'] .= ' | '
 				. l('Fares', 'route/' . $variables['route']->rid . '/fares/add');
@@ -1627,6 +1722,31 @@ function template_preprocess_gtfs_manager_route_detail(&$variables) {
 				. l('Features', 'route/' . $variables['route']->rid . '/feature/add');
 	}
 }
+
+/**
+ * Implements template_preprocess_hook()
+ *
+ * Prepares trips detail data for template gtfs-manager-route-trips-view.tpl.php
+ * @param &$variables a reference to varables provided by theme_hook()
+ */
+function template_preprocess_gtfs_manager_route_trips_view(&$variables) {
+	$variables['links'] = array();
+	$variables['links'][] =  l('Back to route','agency/' . $variables['route']->aid . '/routes');
+
+	if (user_access('administer gtfs')) {
+	      $variables['links'][] = l('Add another trip', 'route/' . $variables['route']->rid . '/trip/add');
+	  }
+  
+  	foreach ($variables['trips'] as $trip) {
+    	$trip->links[] = l('View', 'trip/' . $trip->tid);
+    
+	    if (user_access('administer gtfs')) {
+	      $trip->links[] = l('Edit', 'trip/' . $trip->tid . '/edit');
+	      $trip->links[] = l('Add Stop Times', 'trip/' . $trip->tid . '/stop_times/add');
+	    }
+  	}
+}
+
 
 /**
  * Implements template_preprocess_hook()
@@ -1745,12 +1865,32 @@ function template_preprocess_gtfs_manager_trip_detail(&$variables) {
 	$variables['classes'] = 'gtfs-manager-stop-detail';
 }
 
-function template_preprocess_transfer_report(&$variables) {
+function template_preprocess_active_transfer_report(&$variables) {
 	foreach ($variables['transfers'] as $transfer) {
-		$transfer->ignore_link = ($transfer->is_active == 0)
-		? l(t('Activate'), 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/activate')
-		: l(t('Ignore'), 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/ignore');
+		$transfer->ignore_link = l(t('Ignore'), 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/ignore');
 
+		$transfer->remove_link = l('Remove', 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/delete');
+	}
+}
+
+function template_preprocess_invalid_transfer_report(&$variables) {
+	foreach ($variables['transfers'] as $transfer) {
+		$transfer->ignore_link = l(t('Force'), 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/force');
+
+		$transfer->remove_link = l('Remove', 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/delete');
+	}
+}
+
+function template_preprocess_suggested_transfer_report(&$variables) {
+	foreach ($variables['transfers'] as $transfer) {
+		$transfer->ignore_link = l(t('Ignore'), 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/ignore');
+
+		$transfer->remove_link = l('Activate', 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/delete');
+	}
+}
+
+function template_preprocess_ignored_transfer_report(&$variables) {
+	foreach ($variables['transfers'] as $transfer) {
 		$transfer->remove_link = l('Remove', 'transfer/' . $transfer->from_stop_id . '/' . $transfer->to_stop_id . '/delete');
 	}
 }
@@ -2033,12 +2173,12 @@ function gtfs_manager_agency_routes_view($aid) {
 function gtfs_manager_show_stop_detail($tid) {
 	$query = 'select * from trips t'
 			. ' join stop_times st'
-					. ' on st.tid = t.tid'
-							. ' join stops s'
-									. ' on s.sid = st.sid'
-											. ' join calendar c '
-													. ' on c.service_id = t.service_id '
-															. ' where t.tid = :trip_id';
+			. ' on st.tid = t.tid'
+			. ' join stops s'
+			. ' on s.sid = st.sid'
+			. ' join calendar c '
+			. ' on c.service_id = t.service_id '
+			. ' where t.tid = :trip_id';
 
 	$result = db_query($query, array(':trip_id' => $tid));
 
@@ -2279,22 +2419,22 @@ function calendar_date_save($calendar_date) {
  *
  * @return an array of stop time objects indexed by id.
  */
-function stop_time_load_multiple($tids = array(), $conditions = array(), $reset = FALSE) {
-	return entity_load('stop_time', $tids, $conditions, $reset);
+function stop_time_load_multiple($ids = array(), $conditions = array(), $reset = FALSE) {
+	return entity_get_controller('stop_time')->getStopTimes($ids);
 }
 
 /**
  * Load stop time object from the database
- * @param $id the stop id and trip id
+ * @param $ids associative array with sid and tid
  * @param $reset whether to reset the cache
  *
- * @return a fully populated stop object
+ * @return a fully populated stop time object
  */
-function stop_time_load($tid = null, $reset = FALSE) {
-	$tids = (isset($tid) ? array($tid) : array());
+function stop_time_load($ids = null, $reset = FALSE) {
+	$all_ids = (isset($ids) ? array($ids) : array());
 	$conditions = array();
-	$stop_time = route_load_multiple($ids, $conditions, $reset);
-	return $stop_time ? reset($stop_time) : FALSE;
+	$stop_time = stop_time_load_multiple($all_ids, $conditions, $reset);
+	return $stop_time;
 }
 
 /**
@@ -2355,7 +2495,8 @@ function stop_time_save($stop_time) {
  * @return an array of trips objects indexed by rid.
  */
 function trip_load_multiple($tids = array(), $conditions = array(), $reset = FALSE) {
-	return entity_load('trip', $tids, $conditions, $reset);
+  return entity_get_controller('trip')->getTrips($tids, $conditions);
+  //return entity_load('trip', $tids, $conditions, $reset);
 }
 
 /**
@@ -2369,7 +2510,7 @@ function trip_load_multiple($tids = array(), $conditions = array(), $reset = FAL
 function trip_load($tid = null, $reset = FALSE) {
 	$tids = (isset($tid) ? array($tid) : array());
 	$conditions = array();
-	$trip = route_load_multiple($tids, $conditions, $reset);
+	$trip = trip_load_multiple($tids, $conditions, $reset);
 	return $trip ? reset($trip) : FALSE;
 }
 
@@ -2429,7 +2570,7 @@ function trip_save($trip) {
  * @return an array of stop objects indexed by sid.
  */
 function stop_load_multiple($sids = array(), $conditions = array(), $reset = FALSE) {
-	return entity_get_controller('stop')->getStops($sids, $conditions);
+	return entity_load('stop', $sids, $conditions, $reset);
 }
 
 /**
@@ -2773,9 +2914,8 @@ function gtfs_manager_search_widget($form, &$form_state){
 			'#options' => array(0 => t('Round Trip'), 1 => t('One Way')),
 			'#default_value' => 1,
 	);
-
 	//Date picker for travel date -- needs default date
-	//Date picker for travel date -- needs default date
+		//Date picker for travel date -- needs default date
 	$form['gtfs_manager_search_date'] = array(
 			'#type' => 'textfield',
 			'#attributes' => array(
@@ -2795,7 +2935,7 @@ function gtfs_manager_search_widget($form, &$form_state){
 	$form['gtfs_manager_return_date'] = array(
 			'#type' => 'textfield',
 			'#attributes' => array(
-					'class' => array('return-date'),
+					'class' => array('search-date'),
 					'placeholder' => 'Return (mm/dd/yyyy)'
 			),
 			'#states' => array(
@@ -2957,50 +3097,6 @@ function gtfs_manager_search_form($form, &$form_state){
 	return $form;
 }
 
-
-function gtfs_manager_stop_name_validate($stop_name){
-		$json;
-		
-		$output_array = array();
-		preg_match("/(.*) \(([A-Za-z]{2})\)/", $stop_name, $output_array);
-		
-		if(isset($output_array[1])){
-			$stop_name = $output_array[1];
-			$province = $output_array[2];
-			
-			$query = db_select('stops', 's')
-			->fields('s', array('stop_name'))
-			->fields('p', array('code'));
-			$query->leftJoin('provinces', 'p', 's.province_id = p.province_id');
-			$query->condition('s.stop_name', $stop_name, '=');
-			$query->condition('p.code', $province, '=');
-			$query->range(0, 1);
-			$result = $query->execute();
-			if($result->rowCount() == 1)
-				$json = true;
-			else
-				$json = false;
-		}
-		
-		if(!isset($output_array[1]) || $json === false){
-			$query = db_select('stops', 's')
-			->fields('s', array('stop_name'))
-			->fields('p', array('code'));
-			$query->leftJoin('provinces', 'p', 's.province_id = p.province_id');
-			$query->condition('s.stop_name', '%' . db_like($stop_name) . '%', 'LIKE');
-			$query->orderBy("LENGTH(stop_name)");
-			$query->range(0, 1);
-			$result = $query->execute();
-			if($result->rowCount() == 1){
-				$row = $result->fetchAssoc();
-				$json = $row['stop_name'] . ' (' . $row['code'] . ')';
-			}else
-				$json = false;
-		}
-		
-		// return for JS
-		drupal_json_output($json);
-	}
 /*
  * Validates user search information
 */
@@ -3009,12 +3105,13 @@ function gtfs_manager_search_form_validate($form, &$form_state) {
 	$origin = $form_state['values']['gtfs_manager_search_origin'];
 	$destination = $form_state['values']['gtfs_manager_search_destination'];
 	
-	if (empty($origin) || $origin == "Enter Destination City/Town") {
-		form_set_error('gtfs_manager_search_date', t('Please choose an origin.'));
+
+	if (empty($origin) || $origin == "Enter Departure City/Town") {
+		form_set_error('gtfs_manager_search_origin', t('Please choose an origin.'));
 	}
 
 	if (empty($destination) || $destination == "Enter Destination City/Town") {
-		form_set_error('gtfs_manager_search_date', t('Please choose a destination.'));
+		form_set_error('gtfs_manager_search_destination', t('Please choose a destination.'));
 	}
 
 	//if not in db
@@ -3515,7 +3612,7 @@ SQL;
 	function days_in_trip($legs) {
 		$days = 0;
 
-		/*$query = <<<SQL
+		$query = <<<SQL
 select sum(if(cast(ifnull(st.arrival_time, 0) as time) > cast(st2.departure_time as time), 1,  0))
 from stop_times st
 join trips t
@@ -3538,7 +3635,7 @@ SQL;
 
 		foreach ($legs as $leg) {
 			$days = $days + db_query($query, $leg)->fetchField();
-		}*/
+		}
 
 		return $days;
 
@@ -3587,13 +3684,54 @@ SQL;
 
 	function fetch_active_transfers(){
 		$transfers = array();
+		
+		$query = db_select('transfer_suggestions', 'tr')->extend('PagerDefault');
+		$query->join('stops', 's', 's.sid = tr.from_stop_id');
+		$query->join('stop_times', 'st', 'st.sid = s.sid');
+		$query->join('trips', 't', 't.tid = st.tid');
+		$query->join('routes', 'r', 'r.rid = t.rid');
+		$query->join('agencies', 'a', 'a.aid = r.aid');
+		$query->join('stops', 's2', 's2.sid = tr.to_stop_id');
+		$query->join('stop_times', 'st2', 'st2.sid = s2.sid');
+		$query->join('trips', 't2', 't2.tid = st2.tid');
+		$query->join('routes', 'r2', 'r2.rid = t2.rid');
+		$query->join('agencies', 'a2', 'a2.aid = r2.aid');
+		$query->fields('tr', array('transfer_id', 'to_stop_id', 'from_stop_id'))
+			->fields('s', array('stop_name'))
+			->fields('st', array('arrival_time'))
+			->fields('st2', array('departure_time'))
+			->fields('a', array('agency_name'))
+			->fields('r', array('route_long_name'))
+			->fields('a2', array('agency_name'))
+			->fields('r2', array('route_long_name'));
+		$query->condition('tr.status', '0', '=');
+		$query->limit(10);
+		$query->extend('TableSort')->orderByHeader(array('stop_name', 'arrival_time'));
+		
+		$result = $query->execute();
+
+		while ($transfer = $result->fetchObject()) {
+			$curr = new stdClass();
+			$curr->transfer_id = $transfer->transfer_id;
+			$curr->from_stop_id = $transfer->from_stop_id;
+			$curr->to_stop_id = $transfer->to_stop_id;
+			$curr->stop_name = $transfer->stop_name;
+			$curr->arrival_time = $transfer->arrival_time;
+			$curr->departure_time = $transfer->departure_time;
+			$curr->from_agency_name = $transfer->agency_name;
+			$curr->from_route_name = $transfer->route_long_name;
+			$curr->to_agency_name = $transfer->a2_agency_name;
+			$curr->to_route_name = $transfer->r2_route_long_name;
+			$transfers[] = $curr;
+		}
+		return $transfers;
 
 		$query =<<<SQL
   select tr.from_stop_id
     ,  tr.to_stop_id
-    ,  tr.created_by
-    ,  tr.created_at
-    ,  tr.is_active
+    ,  tr.updated_by
+    ,  tr.updated_at
+	,  tr.status
     ,  s.stop_name
     ,  st.arrival_time
     ,  st2.departure_time
@@ -3602,7 +3740,7 @@ SQL;
     ,  a2.agency_name as to_agency_name
     ,  r2.route_long_name as to_route_name
   from
-    transfers tr
+    transfer_suggestions tr
   join stops s
     on s.sid = tr.from_stop_id
   join stop_times st
@@ -3623,7 +3761,8 @@ SQL;
     on r2.rid = t2.rid
   join agencies a2
     on a2.aid = r2.aid
-  order by is_active, stop_name
+  where tr.status = 1 OR tr.status = 4
+  order by tr.status DESC, stop_name ASC, arrival_time ASC;
 SQL;
 
 		$result = db_query($query);
@@ -3636,109 +3775,123 @@ SQL;
 	}
 
 	function gtfs_manager_suggest_transfers(){
-
 		$query =<<<SQL
-select s.stop_name as departing_stop_name
- ,  s.sid as departing_sid
- ,  st.departure_time
- ,  r.route_long_name as departing_route_long_name
- ,  a.agency_name as departing_agency_name
- ,  st.stop_sequence
- ,  s2.sid as arrival_sid
- ,  st2.arrival_time
- ,  s2.stop_name as arrival_stop_name
- ,  r2.route_long_name as arrival_route_long_name
- ,  a2.agency_name as arrival_agency_name
- ,  st2.stop_sequence
- ,  ifnull((select s3.stop_name from
-       stops s3
-       join stop_times st3
-         on st3.sid = s3.sid
-       join trips t3
-         on t3.tid = st3.tid
-       join routes r3
-         on r3.rid = t3.rid
-       where r3.rid = r.rid
-       and st3.stop_sequence = st.stop_sequence + 1
-limit 1
-    ), 'last-stop') as first_next
-,  ifnull((select s3.stop_name from
-       stops s3
-       join stop_times st3
-         on st3.sid = s3.sid
-       join trips t3
-         on t3.tid = st3.tid
-       join routes r3
-         on r3.rid = t3.rid
-       where r3.rid = r.rid
-       and st3.stop_sequence = st.stop_sequence - 1
-limit 1
-    ), 'first-stop') as first_prev
-    ,  ifnull((select s4.stop_name from
-       stops s4
-join stop_times st4
- on st4.sid = s4.sid
-join trips t4
- on t4.tid = st4.tid
-join routes r4
-         on r4.rid = t4.rid
-where r4.rid = r2.rid
-and st4.stop_sequence = st2.stop_sequence + 1
-limit 1
-    ), 'last-stop') as second_next
-    ,  ifnull((select s4.stop_name from
-       stops s4
-       join stop_times st4
-         on st4.sid = s4.sid
-       join trips t4
-         on t4.tid = st4.tid
-       join routes r4
-         on r4.rid = t4.rid
-       where r4.rid = r2.rid
-       and st4.stop_sequence = st2.stop_sequence - 1
-limit 1
-    ), 'first-stop') as second_prev
-from
-stops s
-join stop_times st
- on st.sid = s.sid
-join trips t
- on t.tid = st.tid
-join calendar c
- on c.service_id = t.service_id
-join routes r
- on r.rid = t.rid
-join agencies a
- on a.aid = r.aid
-inner join stops s2
- on s2.stop_name = s.stop_name
-join stop_times st2
- on st2.sid = s2.sid
-join trips t2
- on t2.tid = st2.tid
-join routes r2
- on r2.rid = t2.rid
-join agencies a2
- on a2.aid = r2.aid
-where r2.rid != r.rid
-and time(st.departure_time) > time(st2.arrival_time)
-and not exists(select 1 from transfers where to_stop_id = st.sid and from_stop_id = st2.sid)
-having first_next != second_next
- and first_prev != second_next
-order by departing_stop_name
-limit 1800, 45;
+		select s.stop_name as departing_stop_name
+		  ,  s.sid as departing_sid
+		  ,  st.departure_time
+		  ,  r.route_long_name as departing_route_long_name
+		  ,  a.agency_name as departing_agency_name
+		  ,  st.stop_sequence
+		  ,  s2.sid as arrival_sid
+		  ,  st2.arrival_time
+		  ,  s2.stop_name as arrival_stop_name
+		  ,  r2.route_long_name as arrival_route_long_name
+		  ,  a2.agency_name as arrival_agency_name
+		  ,  st2.stop_sequence
+		  ,  ifnull((select s3.stop_name from
+		        stops s3
+		        join stop_times st3
+		          on st3.sid = s3.sid
+		        join trips t3
+		          on t3.tid = st3.tid
+		        join routes r3
+		          on r3.rid = t3.rid
+		        where r3.rid = r.rid
+		        and st3.stop_sequence = st.stop_sequence + 1
+		     ), 'last-stop') as first_next
+		,  ifnull((select s3.stop_name from
+		        stops s3
+		        join stop_times st3
+		          on st3.sid = s3.sid
+		        join trips t3
+		          on t3.tid = st3.tid
+		        join routes r3
+		          on r3.rid = t3.rid
+		        where r3.rid = r.rid
+		        and st3.stop_sequence = st.stop_sequence - 1
+		     ), 'first-stop') as first_prev
+		     ,  ifnull((select s4.stop_name from
+		        stops s4
+		        join stop_times st4
+		          on st4.sid = s4.sid
+		        join trips t4
+		          on t4.tid = st4.tid
+		        join routes r4
+		          on r4.rid = t4.rid
+		        where r4.rid = r2.rid
+		        and st4.stop_sequence = st2.stop_sequence + 1
+		     ), 'last-stop') as second_next
+		     ,  ifnull((select s4.stop_name from
+		        stops s4
+		        join stop_times st4
+		          on st4.sid = s4.sid
+		        join trips t4
+		          on t4.tid = st4.tid
+		        join routes r4
+		          on r4.rid = t4.rid
+		        where r4.rid = r2.rid
+		        and st4.stop_sequence = st2.stop_sequence - 1
+		     ), 'first-stop') as second_prev
+		from
+		 stops s
+		join stop_times st
+		  on st.sid = s.sid
+		join trips t
+		  on t.tid = st.tid
+		join calendar c
+		  on c.service_id = t.service_id
+		join routes r
+		  on r.rid = t.rid
+		join agencies a
+		  on a.aid = r.aid
+		inner join stops s2
+		  on s2.stop_name = s.stop_name
+		join stop_times st2
+		  on st2.sid = s2.sid
+		join trips t2
+		  on t2.tid = st2.tid
+		join routes r2
+		  on r2.rid = t2.rid
+		join agencies a2
+		  on a2.aid = r2.aid
+		where r2.rid != r.rid
+		and time(st.departure_time) > time(st2.arrival_time)
+		and not exists(select 1 from transfers where to_stop_id = st.sid and from_stop_id = st2.sid)
+		having first_next != second_next
+		  and first_prev != second_next
+		order by departing_stop_name
+		limit 45;
 SQL;
-
-		
 
 		$transfers['data'] = array();
 		$transfers['options'] = array();
 		
 		$result = db_query($query);
-
+		
 		$i =1;
 		if(isset($result) && is_object($result)){
 			while ($transfer = $result->fetchObject()){
+				
+				$query = db_select('transfer_suggestions', 'ts')
+					->fields('ts', array('from_stop_id', 'to_stop_id'))
+					->condition('ts.from_stop_id', $transfer->departing_sid, '=')
+					->condition('ts.to_stop_id', $transfer->arrival_sid, '=')
+					->execute()
+					->fetchAll();
+				
+				$count = count($query);
+				
+				if($count == 0){
+					db_insert('transfer_suggestions')
+						->fields(array(
+							'from_stop_id' => $transfer->departing_sid,
+							'to_stop_id' => $transfer->arrival_sid,
+							'updated_at' => time(),
+							'updated_by' => 'System',
+						))
+						->execute();
+				}
+				
 				//index the result and the options so that they are easily
 				//matched after the submit
 				$transfer->index = $i;
@@ -3747,19 +3900,17 @@ SQL;
 				$transfers['options'][$i] = 'Transfer available at '
 						. $transfer->arrival_stop_name
 						. ' from route <em>'
-					        .  $transfer->departing_route_long_name
-						. '</em> by <b>'
-						. $transfer->departing_agency_name
-					        . '</b> to route <em>'
-						. $transfer->arrival_route_long_name
-					        . '</em> by <b>'
-						. $transfer->arrival_agency_name
-						. '</b>';
+								.  $transfer->arrival_route_long_name
+								. '</em> by <b>'
+										. $transfer->arrival_agency_name
+										. '</b> to route <em>'
+												. $transfer->departing_route_long_name
+												. '</em> by <b>'
+														. $transfer->departing_agency_name
+														. '</b>';
 				$i++;
 			}
 		}
-		
-		return $transfers;
 
 	}
 
@@ -3825,8 +3976,8 @@ SQL;
 		return entity_get_controller('transfer')->load(array('from_stop_id' => $from_stop_id, 'to_stop_id' => $to_stop_id));
 	}
 
-	function transfer_delete($tranfer) {
-		return entity_get_controller('transfer')->delete($tranfer);
+	function transfer_delete($transfer_id) {
+		return entity_get_controller('transfer')->delete($transfer_id);
 	}
 
 	function capture_search_data($args, $num_results, $return_num_results) {
@@ -4329,7 +4480,7 @@ SQL;
 		$fares[0] = 'Choose Fare';
 
 		while ($fare = $result->fetchObject()) {
-			$fares[$fare->fare_id] = money_format('%i', $fare->price)
+			$fares[$fare->fare_id] = money_format('$%i', $fare->price)
 			. ' '
 					. $fare->currency_type_code;
 		}
@@ -4618,8 +4769,37 @@ group by destination.destination_aid, destination.rid, destination.destination_s
 having destination.destination_stop_sequence > departure.departure_stop_sequence
   order by time(departure_departure_time) asc, time(destination_arrival_time) asc
 SQL;
-		
+		/*$dayname = $args['dayname'];
+	
+		$query = db_select('routes', 'routes');
+		$query->join('trips', 'ot', 'routes.rid=ot.rid');
+		$query->join('stop_times', 'ost', 'ot.tid=ost.tid');
+		$query->join('stops', 'os', 'ost.sid=os.sid');
+		$query->join('provinces', 'op', 'os.province_id=op.province_id');
+		$query->join('routes', 'b', 'routes.rid=b.rid');
+		$query->join('trips', 'dt', 'routes.rid=ot.rid');
+		$query->join('stop_times', 'dst', 'ot.tid=ost.tid');
+		$query->join('stops', 'ds', 'ost.sid=os.sid');
+		$query->join('provinces', 'dp', 'os.province_id=op.province_id');
+		$query->join('calendar', 'cal', 'ot.service_id=cal.service_id');
+		$query->join('agencies', 'agencies', 'routes.aid=agencies.aid');
+		$query->join('transportation_types', 'tt', 'routes.transportation_type_id=tt.transportation_type_id');
+		$query->fields('routes', array('rid'))
+			->fields('ost', array('departure_time'))
+			->fields('dst', array('arrival_time'))
+			->fields('os', array('stop_name', 'stop_desc'))
+			->fields('ds', array('stop_name', 'stop_desc'))
+			->fields('tt', array('transportation_type_name'))
+			->fields('agencies', array('agency_name', 'agency_url', 'agency_phone'))
+			->condition('op.code', $args['opc'])
+			->condition('os.stop_name', $args['o'])
+			->condition('dp.code', $args['dpc'])
+			->condition('ds.stop_name', $args['d'])
+			->where("cal.$dayname = 1")
+			->where(':epoc BETWEEN cal.start_date AND cal.end_date', array(':epoc' => $args['epoc']))
+			->condition('dst.stop_sequence', 'ost.stop_sequence', '>');
 
+		$result = $query->execute();*/
 		$result = db_query($query, $args);
 		while ($match = $result->fetchObject()) {
 			$match->search_type = 'point_to_point';
@@ -4628,7 +4808,6 @@ SQL;
 
 		return $results;
 	}
-
 
 	function fetch_ot_results(&$results, $args){
 		$query =<<<SQL
@@ -4655,7 +4834,6 @@ from
   ,  if(s.wheelchair_boarding = 1, 'Wheelchair access', '') as wheelchair_access
   ,  st.departure_time as departure_departure_time
   ,  st.arrival_time as departure_arrival_time
-  ,  st.tid as departure_tid
   ,  a.aid as origin_aid
   ,  a.agency_name as departure_agency_name
   ,  a.agency_url as departure_agency_url
@@ -4672,7 +4850,7 @@ from stops s
 join provinces p
 on p.province_id = s.province_id
 join stop_times st
-on st.sid = s.sid
+on st.tid = s.sid
 join trips t
 on t.tid = st.tid
 join calendar c
@@ -4704,25 +4882,22 @@ select s.stop_name as from_stop_name
   , st2.stop_sequence as to_stop_sequence
   , st2.departure_time as destination_transfer_arrival_time
   , t2.rid as to_rid
-  , st.tid as from_tid
-  , st2.tid as to_tid
-from transfers tr
+from transfer_suggestions tr
+join stops s
+  on s.sid = tr.from_stop_id
 join stop_times st
-  on st.sid = tr.from_stop_id
-  and st.tid = tr.from_tid
-join stop_times st2
-  on st2.sid = tr.to_stop_id
-  and st2.tid = tr.to_tid
+  on st.tid = s.sid
 join trips t
   on t.tid = st.tid
-join stops s
-  on s.sid = st.sid
 join stops s2
-  on s2.sid = st2.sid
+  on s2.sid = tr.to_stop_id
+join stop_times st2
+  on st2.tid = s2.sid
 join trips t2
   on t2.tid = st2.tid
+where tr.status = 1
 ) transfer_points
-  on transfer_points.from_tid = origin.departure_tid
+  on transfer_points.from_rid = origin.departure_rid
   and origin.departure_stop_sequence < transfer_points.from_stop_sequence
 join
 (select s.sid as destination_sid
@@ -4732,7 +4907,6 @@ join
   ,  s.stop_desc as destination_description
   ,  st.arrival_time as destination_arrival_time
   ,  st.departure_time as destination_departure_time
-  ,  st.tid as destination_tid
   ,  a.aid as destination_aid
   ,  a.agency_name as destination_agency_name
   ,  a.agency_url as destination_agency_url
@@ -4751,7 +4925,7 @@ from stops s
 join provinces p
 on p.province_id = s.province_id
 join stop_times st
-on st.sid = s.sid
+on st.tid = s.sid
 join trips t
 on t.tid = st.tid
 join calendar c
@@ -4768,7 +4942,7 @@ where s.stop_name = :d
 and :epoc between c.start_date and c.end_date
 and dayname(:date) in (if(c.monday = 1, 'monday', ''), if(c.tuesday = 1, 'tuesday', ''), if(c.wednesday = 1, 'wednesday', ''), if(c.thursday = 1, 'thursday', ''), if(c.friday = 1, 'friday', ''), if(c.saturday = 1, 'saturday', ''), if(c.sunday = 1, 'sunday', ''))
 ) destination
-on transfer_points.to_tid = destination.destination_tid
+on transfer_points.to_rid = destination.destination_rid
   and destination.destination_stop_sequence > transfer_points.to_stop_sequence
 left join fare_rules fr
   on fr.origin_id = origin.departure_zone_id
@@ -4814,7 +4988,7 @@ left join stop_service_features ssf4
   on ssf4.sid = transfer_points.from_transfer_point_sid
 left join service_features sf8
   on sf8.service_feature_id = ssf4.service_feature_id
-group by origin_aid, origin.departure_rid, departure_sid, from_transfer_point_sid, destination_aid, destination.destination_rid, destination_sid, to_transfer_point_sid
+group by origin_aid, origin.departure_rid, departure_sid, from_transfer_point_sid, destination_aid, destination.destination_rid, destination_sid
 order by time(departure_departure_time) asc, time(destination_arrival_time) asc
 SQL;
 
@@ -4845,3 +5019,561 @@ function gtfs_manager_legend_content(){
 				</ul>
 			</div>';
 }
+
+function gtfs_manager_city_exists($city){
+	$city_strings = explode(' ', $city);
+	$city_province_code = preg_replace('/[()]/','', array_pop($city_strings));
+	$citystop_name = implode(' ', $city_strings);
+	
+	$query = "SELECT COUNT(*) FROM provinces WHERE code=:code";
+	$result = db_query($query, array(':code' => $city_province_code))->fetchField();
+	if($result == 1)
+		return true;
+	else{
+		$query = db_select('stops', 's')
+		->fields('s', array('stop_name'))
+		->fields('p', array('code'));
+		$query->leftJoin('provinces', 'p', 's.province_id = p.province_id');
+		$query->condition('s.stop_name', '%' . db_like($string) . '%', 'LIKE');
+		$query->range(0, 10);
+		// cities
+		$query2 = db_select('cities', 'c')
+		->fields('c', array('city_name'))
+		->fields('p', array('code'));
+		$query2->leftJoin('provinces', 'p', 'c.province_id = p.province_id');
+		$query2->condition('c.city_name', '%' . db_like($string) . '%', 'LIKE');
+		$query2->range(0, 10);
+		
+		$query->union($query2, 'UNION DISTINCT');
+		
+		$result = $query->execute();
+		
+		if($result->rowCount() == 0)
+			return false;
+		
+		$match = $result->fetchObject();
+		return array('city' => check_plain($match->stop_name), 'province' => check_plain($match->code));
+		
+	}
+}
+	
+	function gtfs_manager_stop_name_validate($stop_name){
+		$json;
+		
+		$output_array = array();
+		preg_match("/(.*) \(([A-Za-z]{2})\)/", $stop_name, $output_array);
+		
+		if(isset($output_array[1])){
+			$stop_name = $output_array[1];
+			$province = $output_array[2];
+			
+			$query = db_select('stops', 's')
+			->fields('s', array('stop_name'))
+			->fields('p', array('code'));
+			$query->leftJoin('provinces', 'p', 's.province_id = p.province_id');
+			$query->condition('s.stop_name', $stop_name, '=');
+			$query->condition('p.code', $province, '=');
+			$query->range(0, 1);
+			$result = $query->execute();
+			if($result->rowCount() == 1)
+				$json = true;
+			else
+				$json = false;
+		}
+		
+		if(!isset($output_array[1]) || $json === false){
+			$query = db_select('stops', 's')
+			->fields('s', array('stop_name'))
+			->fields('p', array('code'));
+			$query->leftJoin('provinces', 'p', 's.province_id = p.province_id');
+			$query->condition('s.stop_name', '%' . db_like($stop_name) . '%', 'LIKE');
+			$query->orderBy("LENGTH(stop_name)");
+			$query->range(0, 1);
+			$result = $query->execute();
+			if($result->rowCount() == 1){
+				$row = $result->fetchAssoc();
+				$json = $row['stop_name'] . ' (' . $row['code'] . ')';
+			}else
+				$json = false;
+		}
+		
+		// return for JS
+		drupal_json_output($json);
+	}
+	
+	function fetch_transfers($type = 'approved'){
+		$status = 0;
+		switch($type){
+			case 'suggested':
+				$status = 0;
+				break;
+			case 'approved':
+				$status = 1;
+				break;
+			case 'ignored':
+				$status = 2;
+				break;
+			case 'invalid':
+				$status = 3;
+				break;
+			case 'forced':
+				$status = 4;
+				break;
+		}
+		
+		$transfers = array();
+	
+		$query = db_select('transfer_suggestions', 'tr')->extend('PagerDefault');
+		$query->join('stops', 's', 's.sid = tr.from_stop_id');
+		$query->join('stop_times', 'st', 'st.sid = s.sid');
+		$query->join('trips', 't', 't.tid = st.tid');
+		$query->join('routes', 'r', 'r.rid = t.rid');
+		$query->join('agencies', 'a', 'a.aid = r.aid');
+		$query->join('stops', 's2', 's2.sid = tr.to_stop_id');
+		$query->join('stop_times', 'st2', 'st2.sid = s2.sid');
+		$query->join('trips', 't2', 't2.tid = st2.tid');
+		$query->join('routes', 'r2', 'r2.rid = t2.rid');
+		$query->join('agencies', 'a2', 'a2.aid = r2.aid');
+		$query->fields('tr', array('transfer_id', 'to_stop_id', 'from_stop_id', 'status', 'updated_at', 'updated_by'))
+		->fields('s', array('stop_name'))
+		->fields('st', array('arrival_time'))
+		->fields('st2', array('departure_time'))
+		->fields('a', array('agency_name'))
+		->fields('r', array('route_long_name'))
+		->fields('a2', array('agency_name'))
+		->fields('r2', array('route_long_name'));
+		$query->condition('tr.status', $status, '=');
+		$query->limit(10);
+		$query->extend('TableSort')->orderByHeader(array('status', 'stop_name', 'arrival_time'));
+	
+		$result = $query->execute();
+
+		while ($transfer = $result->fetchObject()) {
+			$curr = new stdClass();
+			$curr->transfer_id = $transfer->transfer_id;
+			$curr->from_stop_id = $transfer->from_stop_id;
+			$curr->to_stop_id = $transfer->to_stop_id;
+			$curr->stop_name = $transfer->stop_name;
+			$curr->arrival_time = $transfer->arrival_time;
+			$curr->departure_time = $transfer->departure_time;
+			$curr->from_agency_name = $transfer->agency_name;
+			$curr->from_route_name = $transfer->route_long_name;
+			$curr->to_agency_name = $transfer->a2_agency_name;
+			$curr->to_route_name = $transfer->r2_route_long_name;
+			$curr->status = $transfer->status;
+			$curr->updated_at = $transfer->updated_at;
+			$curr->updated_by = $transfer->updated_by;
+			$transfers[] = $curr;
+		}
+		return $transfers;
+	}
+	
+	
+	function gtfs_manager_approved_transfers($form, &$form_state){
+		$form['#cache'] = FALSE;
+		
+		$approved_transfers = fetch_transfers('approved');
+		$invalid_transfers = fetch_transfers('invalid');
+		
+		if(!empty($invalid_transfers)){
+			drupal_set_message('Potentially invalid transfers have been detected. Please check the validity of these transfers by ' . l('clicking here', 'admin/config/gtfs_manager/transfer/invalid') . ' or going to the Invalid tab.', 'warning');
+		}
+		
+		$form['approved']['title'] = array(
+				'#type' => 'markup',
+				'#markup' => '<h1>Approved Transfers</h1><p>These transfers will be included in user searches.</p>',
+		);
+		
+		$form['approved']['ignore'] = array(
+				'#type' => 'submit',
+				'#value' => t('Ignore Selected'),
+				'#submit' => array('gtfs_manager_transfer_mass_ignore'),
+				'#attributes' => array(
+						'class' => array('inline'),
+				),
+		);
+		$form['approved']['remove'] = array(
+				'#type' => 'submit',
+				'#value' => t('Remove Selected'),
+				'#submit' => array('gtfs_manager_transfer_mass_remove'),
+				'#attributes' => array(
+						'class' => array('inline'),
+				),
+		);
+		
+		$header = array(
+				'stop_name' => t('Stop Name'),
+				'from_route' => t('From Route'),
+				'arrives' => t('Arrives'),
+				'to_route' => t('To Route'),
+				'departs' => t('Departs'),
+				'activated' => t('Activated'),
+				'options' => t('Options'),
+		);
+		
+		$options = array();
+		foreach ($approved_transfers as $transfer) {
+			$options[$transfer->transfer_id] = array(
+					'stop_name' => $transfer->stop_name,
+					'from_route' => '<b>' . $transfer->from_agency_name . ':</b> ' . $transfer->from_route_name,
+					'arrives' => $transfer->arrival_time,
+					'to_route' => '<b>' . $transfer->to_agency_name . ':</b> ' . $transfer->to_route_name,
+					'departs' => $transfer->departure_time,
+					'activated' => date('d-m-Y', $transfer->updated_at) . ' by ' . $transfer->updated_by,
+					'options' => l(t('Ignore'), 'transfer/' . $transfer->transfer_id . '/ignore/approved') . '<br>' . l(t('Remove'), 'transfer/' . $transfer->transfer_id . '/remove/approved'),
+			);
+		}
+		
+		
+		$form['approved']['table'] = array(
+				'#type' => 'tableselect',
+				'#header' => $header,
+				'#options' => $options,
+				'#empty' => t('No approved transfers'),
+		);
+		
+		$form['approved']['pager'] = array(
+				'#type' => 'markup',
+				'#markup' => theme('pager'),
+		);
+		
+		return $form;
+	}
+	
+	function gtfs_manager_invalid_transfers($form, &$form_state){
+		$form = array();
+		
+		$form['#cache'] = FALSE;
+		
+		$invalid_transfers = fetch_transfers('invalid');
+		
+		$form['invalid']['title'] = array(
+				'#type' => 'markup',
+				'#markup' => '<h1>Potentially Invalid Transfers</h1><p>These transfers have been marked as potentially invalid due to a change in times or routes. They will not appear on user searches unless forced.</p>'
+		);
+			
+		$form['invalid']['force'] = array(
+				'#type' => 'submit',
+				'#value' => t('Force Selected'),
+				'#submit' => array('gtfs_manager_transfer_mass_force'),
+				'#attributes' => array(
+						'class' => array('inline'),
+				),
+		);
+		$form['invalid']['remove'] = array(
+				'#type' => 'submit',
+				'#value' => t('Remove Selected'),
+				'#submit' => array('gtfs_manager_transfer_mass_remove'),
+				'#attributes' => array(
+						'class' => array('inline'),
+				),
+		);
+			
+		$header = array(
+				'stop_name' => t('Stop Name'),
+				'from_route' => t('From Route'),
+				'arrives' => t('Arrives'),
+				'to_route' => t('To Route'),
+				'departs' => t('Departs'),
+				'activated' => t('Activated'),
+				'options' => t('Options'),
+		);
+			
+		$options = array();
+		foreach ($invalid_transfers as $transfer) {
+			$options[$transfer->transfer_id] = array(
+					'stop_name' => $transfer->stop_name,
+					'from_route' => '<b>' . $transfer->from_agency_name . ':</b> ' . $transfer->from_route_name,
+					'arrives' => $transfer->arrival_time,
+					'to_route' => '<b>' . $transfer->to_agency_name . ':</b> ' . $transfer->to_route_name,
+					'departs' => $transfer->departure_time,
+					'activated' => date('d-m-Y', $transfer->updated_at) . ' by ' . $transfer->updated_by,
+					'options' => l(t('Force'), 'transfer/' . $transfer->transfer_id . '/force/invalid') . '<br>' . l(t('Remove'), 'transfer/' . $transfer->transfer_id . '/remove/invalid'),
+			);
+		}
+			
+			
+		$form['invalid']['table'] = array(
+				'#type' => 'tableselect',
+				'#header' => $header,
+				'#options' => $options,
+				'#empty' => t('No invalid transfers'),
+		);
+			
+		$form['invalid']['pager'] = array(
+				'#type' => 'markup',
+				'#markup' => theme('pager'),
+		);
+		
+		return $form;
+	}
+	
+	function gtfs_manager_suggested_transfers(){
+		//loop through transfers
+		$form['#id'] = 'suggested-transfer-form';
+		$form['#cache'] = FALSE;
+		
+		$suggested_transfers = fetch_transfers('suggested');
+		
+		$form['title'] = array(
+			'#type' => 'markup',
+			'#markup' => '<h1>Suggested Transfers</h1>',
+		);
+		
+		$form['buttons'] = array();
+		$form['buttons']['search'] = array(
+				'#type' => 'submit',
+				'#value' => t('Search for Suggestions'),
+				'#submit' => array('gtfs_manager_suggest_transfers'),
+				'#attributes' => array(
+					'style' => array('float:right'),
+				),
+		);
+		$form['buttons']['approve'] = array(
+				'#type' => 'submit',
+				'#value' => t('Approve Selected'),
+				'#submit' => array('gtfs_manager_transfer_mass_approve'),
+				'#attributes' => array(
+					'class' => array('inline'),
+				),
+		);
+		$form['buttons']['ignore'] = array(
+				'#type' => 'submit',
+				'#value' => t('Ignore Selected'),
+				'#submit' => array('gtfs_manager_transfer_mass_ignore'),
+				'#attributes' => array(
+						'class' => array('inline'),
+				),
+		);
+		
+		$header = array(
+				'stop_name' => t('Stop Name'),
+				'from_route' => t('From Route'),
+				'arrives' => t('Arrives'),
+				'to_route' => t('To Route'),
+				'departs' => t('Departs'),
+				'options' => t('Options'),
+		);
+		
+		$options = array();
+		foreach ($suggested_transfers as $transfer) {
+			$options[$transfer->transfer_id] = array(
+					'stop_name' => $transfer->stop_name,
+					'from_route' => '<b>' . $transfer->from_agency_name . ':</b> ' . $transfer->from_route_name,
+					'arrives' => $transfer->arrival_time,
+					'to_route' => '<b>' . $transfer->to_agency_name . ':</b> ' . $transfer->to_route_name,
+					'departs' => $transfer->departure_time,
+					'options' => l(t('Approve'), 'transfer/' . $transfer->transfer_id . '/approve/suggested') . '<br>' . l(t('Ignore'), 'transfer/' . $transfer->transfer_id . '/ignore/suggested'),
+			);
+		}
+		
+		
+		$form['table'] = array(
+			'#type' => 'tableselect',
+			'#header' => $header,
+			'#options' => $options,
+			'#empty' => t('No suggestions. Try searching for new suggestions using the search button above.'),
+		);
+		
+		$form['pager'] = array(
+			'#type' => 'markup',
+			'#markup' => theme('pager'),
+		);
+		
+		return $form;
+	}
+	
+	function gtfs_manager_ignored_transfers(){
+		//loop through transfers
+		$form['#id'] = 'ignored-transfer-form';
+		$form['#cache'] = FALSE;
+		
+		$ignored_transfers = fetch_transfers('ignored');
+		
+		$form['buttons']['remove'] = array(
+				'#type' => 'submit',
+				'#value' => t('Remove Selected'),
+				'#submit' => array('gtfs_manager_transfer_mass_remove'),
+				'#attributes' => array(
+						'class' => array('inline'),
+				),
+		);
+		
+		$header = array(
+				'stop_name' => t('Stop Name'),
+				'from_route' => t('From Route'),
+				'arrives' => t('Arrives'),
+				'to_route' => t('To Route'),
+				'departs' => t('Departs'),
+				'ignored' => t('Ignored'),
+				'options' => t('Options'),
+		);
+		
+		$options = array();
+		foreach ($ignored_transfers as $transfer) {
+			$options[$transfer->transfer_id] = array(
+					'stop_name' => $transfer->stop_name,
+					'from_route' => '<b>' . $transfer->from_agency_name . ':</b> ' . $transfer->from_route_name,
+					'arrives' => $transfer->arrival_time,
+					'to_route' => '<b>' . $transfer->to_agency_name . ':</b> ' . $transfer->to_route_name,
+					'departs' => $transfer->departure_time,
+					'ignored' => date('d-m-Y', $transfer->updated_at) . ' by ' . $transfer->updated_by,
+					'options' => l(t('Remove'), 'transfer/' . $transfer->transfer_id . '/remove/ignored'),
+			);
+		}
+		
+		
+		$form['table'] = array(
+				'#type' => 'tableselect',
+				'#header' => $header,
+				'#options' => $options,
+				'#empty' => t('No ignored transfers'),
+		);
+		
+		$form['pager'] = array(
+				'#type' => 'markup',
+				'#markup' => theme('pager'),
+		);
+		
+		return $form;
+	}
+	
+	function gtfs_manager_forced_transfers($form, &$form_state){
+		$form = array();
+		
+		$form['#cache'] = FALSE;
+		
+		$forced_transfers = fetch_transfers('forced');
+		
+		$form['forced']['title'] = array(
+				'#type' => 'markup',
+				'#markup' => '<h1>Force Approved Transfers</h1><p>These transfers have been forcibly approved so they will appear in user searches.</p>',
+		);
+			
+		$form['forced']['remove'] = array(
+				'#type' => 'submit',
+				'#value' => t('Remove Selected'),
+				'#submit' => array('gtfs_manager_transfer_mass_remove'),
+				'#attributes' => array(
+						'class' => array('inline'),
+				),
+		);
+			
+		$header = array(
+				'stop_name' => t('Stop Name'),
+				'from_route' => t('From Route'),
+				'arrives' => t('Arrives'),
+				'to_route' => t('To Route'),
+				'departs' => t('Departs'),
+				'activated' => t('Activated'),
+				'options' => t('Options'),
+		);
+			
+		$options = array();
+		foreach ($forced_transfers as $transfer) {
+			$options[$transfer->transfer_id] = array(
+					'stop_name' => $transfer->stop_name,
+					'from_route' => '<b>' . $transfer->from_agency_name . ':</b> ' . $transfer->from_route_name,
+					'arrives' => $transfer->arrival_time,
+					'to_route' => '<b>' . $transfer->to_agency_name . ':</b> ' . $transfer->to_route_name,
+					'departs' => $transfer->departure_time,
+					'Force activated' => date('d-m-Y', $transfer->updated_at) . ' by ' . $transfer->updated_by,
+					'options' => l(t('Remove'), 'transfer/' . $transfer->transfer_id . '/remove/forced'),
+			);
+		}
+			
+			
+		$form['forced']['table'] = array(
+				'#type' => 'tableselect',
+				'#header' => $header,
+				'#options' => $options,
+				'#empty' => t('No invalid transfers'),
+		);
+			
+		$form['forced']['pager'] = array(
+				'#type' => 'markup',
+				'#markup' => theme('pager'),
+		);
+		
+		return $form;
+	}
+	
+	function gtfs_manager_transfer_mass_approve($form, &$form_state){
+		$transfers = $form_state['values']['table'];
+		foreach($transfers as $transfer){
+			if($transfer != null)
+				gtfs_manager_transfer_approve($transfer);
+		}
+		drupal_set_message('Transfers Approved');
+	}
+	
+	function gtfs_manager_transfer_mass_ignore($form, &$form_state){
+		$transfers = $form_state['values']['table'];
+		foreach($transfers as $transfer){
+			if($transfer != null)
+				gtfs_manager_transfer_ignore($transfer);
+		}
+		drupal_set_message('Transfers Ignored');
+	}
+	
+	function gtfs_manager_transfer_mass_remove($form, &$form_state){
+		$transfers = $form_state['values']['table'];
+		foreach($transfers as $transfer){
+			if($transfer != null)
+				gtfs_manager_transfer_remove($transfer);
+		}
+		drupal_set_message('Transfers Removed');
+	}
+	
+	function gtfs_manager_transfer_mass_force($form, &$form_state){
+		$transfers = $form_state['values']['table'];
+		foreach($transfers as $transfer){
+			if($transfer != null)
+				gtfs_manager_transfer_force($transfer);
+		}
+		drupal_set_message('Transfers Forced');
+	}
+	
+	function gtfs_manager_transfer_approve($transfer_id, $redirect = NULL){
+		db_update('transfer_suggestions')
+			->fields(array(
+				'status' => 1,
+			))
+			->condition('transfer_id', $transfer_id, '=')
+			->execute();
+		
+		if(isset($redirect))
+			drupal_goto('/admin/config/gtfs_manager/transfer/' . $redirect);
+	}
+	
+	function gtfs_manager_transfer_ignore($transfer_id, $redirect = NULL){
+		db_update('transfer_suggestions')
+			->fields(array(
+				'status' => 2,
+			))
+			->condition('transfer_id', $transfer_id, '=')
+			->execute();
+		
+		if(isset($redirect))
+			drupal_goto('/admin/config/gtfs_manager/transfer/' . $redirect);
+	}
+	
+	function gtfs_manager_transfer_remove($transfer_id, $redirect = NULL){
+		db_delete('transfer_suggestions')
+			->condition('transfer_id', $transfer_id, '=')
+			->execute();
+			
+		if(isset($redirect))
+			drupal_goto('/admin/config/gtfs_manager/transfer/' . $redirect);
+	}
+	
+	function gtfs_manager_transfer_force($transfer_id, $redirect = NULL){
+		db_update('transfer_suggestions')
+			->fields(array(
+				'status' => 4,
+			))
+			->execute();
+			
+		if(isset($redirect))
+			drupal_goto('/admin/config/gtfs_manager/transfer/' . $redirect);
+	}
