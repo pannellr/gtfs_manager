@@ -9,60 +9,35 @@ class StopController extends DrupalDefaultEntityController {
    *
    * @return the empty Stop object
    */
-  public function create($sid = '') {
-    return (object) array(
-      'sid' => $sid,
-      'stop_name' => '',
-      'stop_desc' => '',
-      'stop_lat' => '',
-      'stop_long' => '',
-      'wheelchair_boarding' => '',
-      'zone_id' => '',
-      'province_id' => '',
-      'time_zone_id' => '',
-      'created_at' => '',
-      'updated_at' => '',
-      'created_by' => '',
-      'updated_by' => '',
-      //other table properties
-      'service_id' => '',
-      'arrival_time' => '',
-      'departure_time' => '',
-      'stop_sequence' => '',
-      'shape_dist_traveled' => '',
-      'start_date' => time(),
-      'end_date' => time(),
-      'days' => drupal_map_assoc(array(
-		      t('monday'),
-		      t('tuesday'),
-		      t('wednesday'),
-		      t('thursday'),
-		      t('friday'),
-		      t('saturday'),
-		      t('sunday')
-				       )),
-      'monday' => '',
-      'tuesday' => '',
-      'wednesday' => '',
-      'thursday' => '',
-      'friday' => '',
-      'saturday' => '',
-      'sunday' => '',
-    );
-  }
+    public function create($sid = '') {
+      return (object) array(
+        'sid' => $sid,
+        'stop_name' => '',
+        'stop_desc' => '',
+        'stop_lat' => '',
+        'stop_long' => '',
+        'wheelchair_boarding' => '',
+        'zone_id' => '',
+        'province_id' => '',
+        'time_zone_id' => '',
+        'created_at' => '',
+        'updated_at' => '',
+        'created_by' => '',
+        'updated_by' => '',
+      );
+    }
 
   public function save($stop) {
     $transaction = db_transaction();
 
     try {
-      global $user;
-
-      //determine if stop is new
-      $stop->is_new = empty($stop->sid);
+        global $user;
+        //determine if stop is new
+        $stop->is_new = empty($stop->sid);
 
       //set timestamps
       if (empty($stop->created_at)) {
-	$stop->created_at = REQUEST_TIME;
+        $stop->created_at = REQUEST_TIME;
       }
 
       $stop->updated_at = REQUEST_TIME;
@@ -70,30 +45,30 @@ class StopController extends DrupalDefaultEntityController {
       // give other modules a chance to prepare field data
       field_attach_presave('stop', $stop);
 
-      // if this is a new stop
-      if ($stop->is_new) {
-	// Save the stop
-	drupal_write_record('stops', $stop);
-	$op = 'insert';
-      } else {
-	// update the stop
-	drupal_write_record('stops', $stop, 'sid');
-	$op = 'update';
-      }
+        // if this is a new stop
+        if ($stop->is_new) {
+        // Save the stop
+          drupal_write_record('stops', $stop);
+          $op = 'insert';
+        } else {
+          // update the stop
+          drupal_write_record('stops', $stop, 'sid');
+          $op = 'update';
+        }
 
-      // Save fields
-      $function = 'field_attach_' . $op;
-      $function('stop', $stop);
+        // Save fields
+        $function = 'field_attach_' . $op;
+        $function('stop', $stop);
 
-      module_invoke_all('entity_' . $op, $stop, 'stop');
+        module_invoke_all('entity_' . $op, $stop, 'stop');
 
-      // Clear internal properties
-      unset($stop->is_new);
+        // Clear internal properties
+        unset($stop->is_new);
 
-      // Ignore slave server temporarily to give time for insert/update
-      db_ignore_slave();
+        // Ignore slave server temporarily to give time for insert/update
+        db_ignore_slave();
 
-      return $stop;
+        return $stop;
 
       //catch exceptions and rollback database changes
     } catch (Exception $e) {

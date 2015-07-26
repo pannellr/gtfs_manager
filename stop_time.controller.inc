@@ -27,16 +27,18 @@ class StopTimeController extends DrupalDefaultEntityController {
 
   public function save($stop_time) {
     $transaction = db_transaction();
+    $stop_time->is_new = TRUE;
 
     try {
-      global $user;
-      //determine if stop time is new
-      $stop_time->is_new = !db_query('select 1 from {stop_times} where sid = :sid and tid = :tid', array(':sid' => $stop_time->sid, ':tid' => $stop_time->tid))
-	    ->fetchField();
+        global $user;
+        //determine if stop time is new
+        //if (!empty($stop_time->sid) || !empty($stop_time->tid)) {
+        //  $stop_time->is_new = FALSE;
+        //} 
 
       //set timestamps
-      if (empty($stop_time->created_at)) {
-	    $stop_time->created_at = REQUEST_TIME;
+      if ($stop_time->is_new) {
+        $stop_time->created_at = REQUEST_TIME;
       }
 
       $stop_time->updated_at = REQUEST_TIME;
@@ -44,50 +46,30 @@ class StopTimeController extends DrupalDefaultEntityController {
 
       // if this is a new stop time
       if ($stop_time->is_new) {
-	// Save the route
+	     // Save the route
 
-	//not sure why drupal_write_record isn't working here
-	$ids = db_insert('stop_times')
-	  ->fields(array(
-	    'tid' => $stop_time->tid,
-	    'sid' => $stop_time->sid,
-	    'arrival_time' => $stop_time->arrival_time,
-	    'departure_time' => $stop_time->departure_time,
-	    'stop_sequence' => $stop_time->stop_sequence,
-	    'shape_dist_traveled' => $stop_time->shape_dist_traveled,
-	    'created_at' => $stop_time->created_at,
-	    'updated_at' => $stop_time->updated_at,
-	    'created_by' => $stop_time->created_by,
-	    'updated_by' => $stop_time->updated_by
-	  ))
-	  ->execute();
+        drupal_write_record('stop_times', $stop_time);
 
-	$op = 'insert';
+
       } else {
-	// update the stop time
-	$ids = db_update('stop_times')
-	  ->fields(array(
-	    'arrival_time' => $stop_time->arrival_time,
-	    'departure_time' => $stop_time->departure_time,
-	    'stop_sequence' => $stop_time->stop_sequence,
-	    'shape_dist_traveled' => $stop_time->shape_dist_traveled,
-	    'created_at' => $stop_time->created_at,
-	    'updated_at' => $stop_time->updated_at,
-	    'created_by' => $stop_time->created_by,
-	    'updated_by' => $stop_time->updated_by
-	  ))
-	  ->condition('tid', $stop_time->tid, '=')
-	  ->condition('sid', $stop_time->sid, '=')
-	  ->execute();
-
-	$op = 'update';
+      	// update the stop time
+      	$ids = db_update('stop_times')
+      	  ->fields(array(
+      	    'arrival_time' => $stop_time->arrival_time,
+      	    'departure_time' => $stop_time->departure_time,
+      	    'stop_sequence' => $stop_time->stop_sequence,
+      	    'shape_dist_traveled' => $stop_time->shape_dist_traveled,
+      	    'created_at' => $stop_time->created_at,
+      	    'updated_at' => $stop_time->updated_at,
+      	    'created_by' => $stop_time->created_by,
+      	    'updated_by' => $stop_time->updated_by
+      	  ))
+      	  ->condition('tid', $stop_time->tid, '=')
+      	  ->condition('sid', $stop_time->sid, '=')
+      	  ->execute();
       }
 
       // Save fields
-      $function = 'field_attach_' . $op;
-      $function('stop_time', $stop_time);
-
-      module_invoke_all('entity_' . $op, $stop_time, 'stop_time');
 
       // Clear internal properties
       unset($stop_time->is_new);
@@ -129,6 +111,13 @@ class StopTimeController extends DrupalDefaultEntityController {
       $this->resetCache();
     }
     return TRUE;
+  }
+
+function getStopTimes($ids) {
+    $query = 'select * from {stop_times} st where st.sid = :sid and st.tid = :tid';
+    $result = db_query($query, $ids[0]);
+    $stop_times = $result->fetchObject();
+    return $stop_times;
   }
 
 

@@ -2,11 +2,7 @@
 /**
  * Form builder for new trip, stop, and stop_time
  */
-function gtfs_manager_stop_form($form, &$form_state, $stop = null, $route = null) {
-
-  //collect the route id
-  $route_id = isset($route) ? $route->rid : $stop->rid;
-
+function gtfs_manager_stop_form($form, &$form_state, $stop=null) {
   //Set the id ot identify this as the stop edit form
   $form['#id'] = 'stop-form';
 
@@ -14,12 +10,14 @@ function gtfs_manager_stop_form($form, &$form_state, $stop = null, $route = null
   $form['#stop'] = $stop;
   $form_state['stop'] = $stop;
 
-  //hidden field for route id
-  $form['gtfs_manager_rid'] = array(
-    '#type' => 'hidden',
-    '#value' => $route_id,
-  );
+  if ($stop) {
+    //hidden field for route id
+    $form['gtfs_manager_sid'] = array(
+      '#type' => 'hidden',
+      '#value' => $stop->sid,
+    );
 
+  }
   //Stop Section
 
   //Textfield for stop name
@@ -85,84 +83,84 @@ function gtfs_manager_stop_form($form, &$form_state, $stop = null, $route = null
     '#required' => TRUE,
   );
 
-  //tetfield for trip distance
-  $form['gtfs_manager_shape_dist_traveled'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Distance from previous stop in kilometers'),
-    '#description' => t('Up to 3 decimals of accuracy.'),
-    '#size' => 24,
-    '#default_value' => $stop->shape_dist_traveled,
-  );
+  // //tetfield for trip distance
+  // $form['gtfs_manager_shape_dist_traveled'] = array(
+  //   '#type' => 'textfield',
+  //   '#title' => t('Distance from previous stop in kilometers'),
+  //   '#description' => t('Up to 3 decimals of accuracy.'),
+  //   '#size' => 24,
+    // '#default_value' => $stop->shape_dist_traveled,
+  // );
 
-  //timepicker for stop arrival time
-  $form['gtfs_manager_stop_arrival_time'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Arrival Time for this stop'),
-    '#description' => t('The arrival time'),
-    '#attributes' => array('class' => array('form-time')),
-    '#default_value' => $stop->arrival_time,
-    '#size' => 20,
-    '#required' => TRUE,
-  );
+  // //timepicker for stop arrival time
+  // $form['gtfs_manager_stop_arrival_time'] = array(
+  //   '#type' => 'textfield',
+  //   '#title' => t('Arrival Time for this stop'),
+  //   '#description' => t('The arrival time'),
+  //   '#attributes' => array('class' => array('form-time')),
+    // '#default_value' => $stop->arrival_time,
+  //   '#size' => 20,
+  //   '#required' => TRUE,
+  // );
 
-  //timepicker for stop arrival time
-  $form['gtfs_manager_stop_departure_time'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Departure Time for this stop'),
-    '#description' => t('The departure time'),
-    '#attributes' => array('class' => array('form-time')),
-    '#size' =>20,
-    '#default_value' => $stop->departure_time,
-    '#required' => TRUE,
-  );
+  // //timepicker for stop arrival time
+  // $form['gtfs_manager_stop_departure_time'] = array(
+  //   '#type' => 'textfield',
+  //   '#title' => t('Departure Time for this stop'),
+  //   '#description' => t('The departure time'),
+  //   '#attributes' => array('class' => array('form-time')),
+  //   '#size' =>20,
+    // '#default_value' => $stop->departure_time,
+  //   '#required' => TRUE,
+  // );
 
-  //tetfield for stop sequence number
-  $form['gtfs_manager_stop_sequence'] = array(
-    '#type' => 'select',
-    '#title' => t('Sequence'),
-    '#options' => fetch_sequence_select($route_id),
-    '#default_value' => ($stop->stop_sequence - 1),
-    '#required' => TRUE,
-  );
+  // //tetfield for stop sequence number
+  // $form['gtfs_manager_stop_sequence'] = array(
+  //   '#type' => 'select',
+  //   '#title' => t('Sequence'),
+  //   '#options' => fetch_sequence_select($route_id),
+    // '#default_value' => ($stop->stop_sequence - 1),
+  //   '#required' => TRUE,
+  // );
 
-  //start date popup
-  $form['gtfs_manager_schedule_start_date'] = array(
-    '#type' => 'date_popup',
-    '#date_format' => 'd-m-Y',
-    '#default_value' => date('Y-m-d H:i:s', $stop->start_date),
-    '#date_year_range' => '0:+2',
-    '#date_label_position' => 'invisible',
-    '#title' => t('Schedule start date'),
-    '#required' => TRUE,
-  );
+  // //start date popup
+  // $form['gtfs_manager_schedule_start_date'] = array(
+  //   '#type' => 'date_popup',
+  //   '#date_format' => 'd-m-Y',
+    // '#default_value' => date('Y-m-d H:i:s', $stop->start_date),
+  //   '#date_year_range' => '0:+2',
+  //   '#date_label_position' => 'invisible',
+  //   '#title' => t('Schedule start date'),
+  //   '#required' => TRUE,
+  // );
 
-  //end date popup
-  $form['gtfs_manager_schedule_end_date'] = array(
-    '#type' => 'date_popup',
-    '#date_format' => 'd-m-Y',
-    '#default_value' => date('Y-m-d H:i:s', $stop->end_date),
-    '#date_year_range' => '0:+2',
-    '#date_label_position' => 'invisible',
-    '#title' => t('Schedule end date'),
-    '#required' => TRUE,
-  );
+  // //end date popup
+  // $form['gtfs_manager_schedule_end_date'] = array(
+  //   '#type' => 'date_popup',
+  //   '#date_format' => 'd-m-Y',
+    // '#default_value' => date('Y-m-d H:i:s', $stop->end_date),
+  //   '#date_year_range' => '0:+2',
+  //   '#date_label_position' => 'invisible',
+  //   '#title' => t('Schedule end date'),
+  //   '#required' => TRUE,
+  // );
 
 
-  //checkboxes for days of the week
-  $form['gtfs_manager_schedule_days'] = array(
-    '#type' => 'checkboxes',
-    '#options' => drupal_map_assoc(array(
-			t('monday'),
-			t('tuesday'),
-			t('wednesday'),
-			t('thursday'),
-			t('friday'),
-			t('saturday'),
-			t('sunday')
-					 )),
-    '#default_value' => $stop->days,
-    '#title' => t('Which days will this route run?'),
-  );
+  // //checkboxes for days of the week
+  // $form['gtfs_manager_schedule_days'] = array(
+  //   '#type' => 'checkboxes',
+  //   '#options' => drupal_map_assoc(array(
+		// 	t('monday'),
+		// 	t('tuesday'),
+		// 	t('wednesday'),
+		// 	t('thursday'),
+		// 	t('friday'),
+		// 	t('saturday'),
+		// 	t('sunday')
+		// 			 )),
+    // '#default_value' => $stop->days,
+  //   '#title' => t('Which days will this route run?'),
+  // );
 
 
   //Add buttons
@@ -209,67 +207,12 @@ function gtfs_manager_stop_form_submit($form, &$form_state) {
 
   $is_new = empty($stop->sid);
 
-  $trip_id = empty($stop->tid) ? '' : $stop->tid;
-  $service_id = empty($stop->service_id) ? '' : $stop->service_id;
-  //create trip and stop time objects
-  $trip = entity_get_controller('trip')->create($trip_id);
-  $stop_time = entity_get_controller('stop_time')->create($trip_id);
-  $calendar = entity_get_controller('calendar')->create($service_id);
-
   // if it is a new record set created_by
   if (empty($stop->created_by)) {
     $stop->created_by = $user->name;
-    $trip->created_by = $user->name;
-    $stop_time->created_by = $user->name;
-    $calendar->created_by = $user->name;
   }
 
   $stop->updated_by = $user->name;
-  $trip->updated_by = $user->name;
-  $stop_time->updated_by = $user->name;
-  $calendar->updated_by = $user->name;
-
-  //Calendar Save
-  $calendar->monday =
-    !empty($form_state['values']['gtfs_manager_schedule_days']['monday'])
-    ? 1 : 0;
-  $calendar->tuesday =
-    !empty($form_state['values']['gtfs_manager_schedule_days']['tuesday'])
-    ? 1 : 0;
-  $calendar->wednesday =
-    !empty($form_state['values']['gtfs_manager_schedule_days']['wednesday'])
-    ? 1 : 0;
-  $calendar->thursday =
-    !empty($form_state['values']['gtfs_manager_schedule_days']['thursday'])
-    ? 1 : 0;
-  $calendar->friday =
-    !empty($form_state['values']['gtfs_manager_schedule_days']['friday'])
-    ? 1 : 0;
-  $calendar->saturday =
-    !empty($form_state['values']['gtfs_manager_schedule_days']['saturday'])
-    ? 1 : 0;
-  $calendar->sunday =
-    !empty($form_state['values']['gtfs_manager_schedule_days']['sunday'])
-    ? 1 : 0;
-
-  $calendar->start_date =
-    strtotime($form_state['values']['gtfs_manager_schedule_start_date']);
-  $calendar->end_date =
-    strtotime($form_state['values']['gtfs_manager_schedule_end_date']);
-
-  // notify field widgets
-  field_attach_submit('calendar', $calendar, $form, $form_sate);
-
-  calendar_save($calendar);
-
-
-  // Trip Save
-  $trip->rid = $form_state['values']['gtfs_manager_rid'];
-  $trip->service_id = $calendar->service_id;
-
-  field_attach_submit('trip', $trip, $form, $form_state);
-
-  trip_save($trip);
 
   // Save stop
   $stop->stop_name = trim($form_state['values']['gtfs_manager_stop_name']);
@@ -296,31 +239,9 @@ function gtfs_manager_stop_form_submit($form, &$form_state) {
     entity_get_controller('stop_service_feature')->save($feature);
   }
 
-  // stop time save
-  $stop_time->tid = $trip->tid;
-  $stop_time->sid = $stop->sid;
-  $stop_time->shape_dist_traveled = trim($form_state['values']['gtfs_manager_shape_dist_traveled']);
-  watchdog('stop time', serialize($stop_time));
-  $stop_time->arrival_time = $form_state['values']['gtfs_manager_stop_arrival_time'];
-  $stop_time->departure_time = $form_state['values']['gtfs_manager_stop_departure_time'];
-
-  //maintain sequence by reordering the sequence with each addition
-  $update_type = $is_new ? 'new' : 'edit';
-
-  $stop_time->stop_sequence = update_route_sequence(
-    $trip->rid,
-    $form_state['values']['gtfs_manager_stop_sequence'],
-    $update_type,
-    $stop->sid
-  );
-
-  field_attach_submit('stop_time', $stop_time, $form, $form_state);
-
-  stop_time_save($stop_time);
-
   drupal_set_message(t('Your stop has been submitted'));
 
-  $form_state['redirect'] = 'route/' . $trip->rid . '/stops';
+  $form_state['redirect'] = 'stops';
 }
 
 function gtfs_manager_stop_form_delete_submit($form, &$form_state) {
@@ -377,14 +298,13 @@ function stop_delete_confirm_submit($form, &$form_state) {
 //  return theme('gtfs_manager_stop_detail', $variables);
 //}
 
-function gtfs_manager_route_stops_view($route) {
-  $variables['route'] = $route;
+function gtfs_manager_stops_view() {
   //populate stops
-  $stops = stop_load_multiple(array(), array('rid', $route->rid, '='));
+  $stops = entity_load('stop')
 
   if (sizeof($stops > 0)) {
     $variables['stops'] = $stops;
-    return theme('gtfs_manager_route_stops_view', $variables);
+    return theme('gtfs_manager_stops_view', $variables);
   } else {
     drupal_set_message('There are not stops for this route.');
   }
@@ -658,7 +578,7 @@ function gtfs_manager_stop_calendar_date_form($form, &$form_state, $service_id, 
   $form['gtfs_manager_calendar_date'] = array(
     '#type' => 'date_popup',
     '#date_format' => 'd-m-Y',
-    '#default_value' => date('Y-m-d H:i:s', time()),
+    // '#default_value' => date('Y-m-d H:i:s', time()),
     '#date_year_range' => '0:+2',
     '#date_label_position' => 'invisible',
     '#title' => t('Exception Date'),
@@ -668,7 +588,7 @@ function gtfs_manager_stop_calendar_date_form($form, &$form_state, $service_id, 
   $form['gtfs_manager_exception_type'] = array(
     '#type' => 'select',
     '#title' => t('Exception Type'),
-    '#default_value' => 0,
+    // '#default_value' => 0,
     '#options' => array( '' => t('Choose exception type'),
 			 1 => t('Add service for this date'),
 			 2 => t('Remove service for this date')
@@ -767,7 +687,7 @@ function gtfs_manager_stop_service_feature_form($form, &$form_state, $stop_servi
     '#type' => 'checkboxes',
     '#options' => fetch_service_features(),
     '#title' => t('Select features provided by this stop'),
-    '#default_value' => $stop->service_feature_ids,
+    // '#default_value' => $stop->service_feature_ids,
   );
 
   $form['submit'] = array(
