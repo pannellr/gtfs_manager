@@ -888,6 +888,13 @@ function gtfs_manager_menu() {
 			'type' => MENU_CALLBACK,
 	);
 
+
+	$items['stopname/validate'] = array(
+			'page callback' => 'gtfs_manager_stop_name_validate',
+			'type' => MENU_CALLBACK,
+			'access callback' => TRUE,
+	);
+
 	return $items;
 }
 
@@ -1208,42 +1215,56 @@ function template_preprocess_display_search_results(&$variables) {
 
 				$result->features = features_for($result);
 
-				$result->transfer = t('1 Transfer in @t. <em>Layover: @l</em>', array('@t' => $result->to_stop_name, '@l' => $result->layover_duration));
-				$result->transportation_type = t('@t1 to @t2', array('@t1' => $result->departure_transportation_type, '@t2' => $result->destination_transportation_type,));
-				$result->provider = l($result->departure_agency_name, $result->departure_agency_url) . ' to ' . l($result->destination_agency_name, $result->destination_agency_url);
+				$result->transfer = t('Transfer in @t. <em>Layover: @l</em>', array('@t' => $result->to_stop_name, '@l' => $result->layover_duration));
+
+				if ($result->departure_transportation_type == $result->destination_transportation_type) {
+				   $result->transportation_type = t('@t1', array('@t1' => $result->departure_transportation_type));
+				} else {
+				   $result->transportation_type = t('@t1 to @t2', array(
+									'@t1' => $result->departure_transportation_type, 
+								      	'@t2' => $result->destination_transportation_type,
+								      )
+								);
+				}
+				
+				if ($result->departure_agency_name == $result->destination_agency_name) {
+				   $result->provider = l($result->departure_agency_name, $result->departure_agency_url);
+				} else {
+				  $result->provider = l($result->departure_agency_name, $result->departure_agency_url) . ' <br /> ' . l($result->destination_agency_name, $result->destination_agency_url);
+				}
+				
 
 				$result->more_info = '<table><tr><td>'
 						. $result->departure_agency_name
 						. '</td>'
-								. '<td><b>Departs from:'
-										. $result->departure_description
-										. '</td>'
-												. '<td>'
-														. $result->departure_agency_info
-														. '</td>'
-																. '<td>'
-																		. $result->departure_agency_phone
-																		. '</td>'
-																				. '<td>'
-																						. $result->departure_agency_email
-																						. '</td>'
-																								. '</tr>'
-																										. '<tr>'
-																												. '<td>'
-																														. $result->destination_agency_name
-																														. '</td>'
-																																. '<td><b>Arrives at:'
-																																		. $result->destination_description
-																																		. '</td>'
-																																				. '<td>'
-																																						. $result->destination_agency_info
-																																						. '</td>'
-																																								. '<td>'
-																																										. $result->destination_agency_phone
-																																										. '</td>'
-																																												. '<td>'
-																																														. $result->destination_agency_email
-																																														. '</td></tr></table>';
+						. '<td><b>Departs from:'
+						. $result->departure_description
+						. '</td>'
+						. '<td>'
+						. $result->departure_agency_info
+						. '</td>'
+						. '<td>'
+						. $result->departure_agency_phone
+						. '</td>'
+						. '<td>'
+						. $result->departure_agency_email
+						. '</td>'
+						. '</tr>'
+						. '<tr>'
+						. '<td>'
+						. $result->destination_agency_name																	   . '</td>'
+						. '<td><b>Arrives at:'
+						. $result->destination_description
+						. '</td>'
+						. '<td>'
+						. $result->destination_agency_info
+						. '</td>'
+						. '<td>'
+						. $result->destination_agency_phone
+						. '</td>'
+						. '<td>'
+						. $result->destination_agency_email
+						. '</td></tr></table>';
 
 			} else {
 
@@ -1274,7 +1295,7 @@ function template_preprocess_display_search_results(&$variables) {
 																												. '</td>'
 																														. '</tr></table>';
 
-				$result->transfer = 0;
+				$result->transfer = '';
 				$result->provider = l($result->departure_agency_name, $result->departure_agency_url);
 			}
 		}
@@ -1329,19 +1350,28 @@ function template_preprocess_display_search_results(&$variables) {
 				$result->features = features_for($result);
 
 
-				$result->transfer = t('1 Transfer in @t. <em>Layover: @l</em>', array('@t' => $result->destination_city, '@l' => $result->layover_duration));
+				$result->transfer = t('Transfer in @t. <em>Layover: @l</em>', array('@t' => $result->destination_city, '@l' => $result->layover_duration));
 
-				$result->transportation_type = t('@t1 to @t2', array('@t1' => $result->departure_transportation_type, '@t2' => $result->destination_transportation_type,));
+
+				if ($result->departure_transportation_type == $result->destination_transportation_type) {
+				   $result->transportation_type = t('@t1', array('@t1' => $result->departure_transportation_type));
+				} else {
+				  $result->transportation_type = t('@t1 to @t2', 
+				  			       	 	array('@t1' => $result->departure_transportation_type, 
+							       	              '@t2' => $result->destination_transportation_type,
+								 	      )
+								 );
+				}
 
 				$result->more_info = '<table><tr><td>'
 						. $result->departure_agency_name
 						. '</td>'
-								. '<td><b>Departs from: </b>'
-										. $result->departure_description
-										. '</td>'
-												. '<td><b>Departs from: </b>'
-														. $result->departure_description
-														. '</td>'
+						. '<td><b>Departs from: </b>'
+						. $result->departure_description
+						. '</td>'
+						. '<td><b>Departs from: </b>'
+						. $result->departure_description
+						. '</td>'
 																. '<td><b>Arrives at: </b>'
 																		. $result->destination_description
 																		. '</td>'
@@ -2745,7 +2775,7 @@ function gtfs_manager_search_widget($form, &$form_state){
 	);
 
 	//Date picker for travel date -- needs default date
-		//Date picker for travel date -- needs default date
+	//Date picker for travel date -- needs default date
 	$form['gtfs_manager_search_date'] = array(
 			'#type' => 'textfield',
 			'#attributes' => array(
@@ -2841,6 +2871,7 @@ function gtfs_manager_search_form($form, &$form_state){
 			'#suffix' => '</li>',
 			'#attributes' => array(
 					'placeholder' => 'Enter Departure City/Town',
+					'class' => array('stopname'),
 			),
 	);
 
@@ -2854,6 +2885,7 @@ function gtfs_manager_search_form($form, &$form_state){
 			'#suffix' => '</li></ul>',
 			'#attributes' => array(
 					'placeholder' => 'Enter Destination City/Town',
+					'class' => array('stopname'),
 			),
 	);
 
@@ -2885,7 +2917,7 @@ function gtfs_manager_search_form($form, &$form_state){
 	$form['gtfs_manager_return_date'] = array(
 			'#type' => 'textfield',
 			'#attributes' => array(
-					'class' => array('return-date'),
+					'class' => array('search-date'),
 					'placeholder' => 'Return (mm/dd/yyyy)'
 			),
 			'#states' => array(
@@ -2925,6 +2957,50 @@ function gtfs_manager_search_form($form, &$form_state){
 	return $form;
 }
 
+
+function gtfs_manager_stop_name_validate($stop_name){
+		$json;
+		
+		$output_array = array();
+		preg_match("/(.*) \(([A-Za-z]{2})\)/", $stop_name, $output_array);
+		
+		if(isset($output_array[1])){
+			$stop_name = $output_array[1];
+			$province = $output_array[2];
+			
+			$query = db_select('stops', 's')
+			->fields('s', array('stop_name'))
+			->fields('p', array('code'));
+			$query->leftJoin('provinces', 'p', 's.province_id = p.province_id');
+			$query->condition('s.stop_name', $stop_name, '=');
+			$query->condition('p.code', $province, '=');
+			$query->range(0, 1);
+			$result = $query->execute();
+			if($result->rowCount() == 1)
+				$json = true;
+			else
+				$json = false;
+		}
+		
+		if(!isset($output_array[1]) || $json === false){
+			$query = db_select('stops', 's')
+			->fields('s', array('stop_name'))
+			->fields('p', array('code'));
+			$query->leftJoin('provinces', 'p', 's.province_id = p.province_id');
+			$query->condition('s.stop_name', '%' . db_like($stop_name) . '%', 'LIKE');
+			$query->orderBy("LENGTH(stop_name)");
+			$query->range(0, 1);
+			$result = $query->execute();
+			if($result->rowCount() == 1){
+				$row = $result->fetchAssoc();
+				$json = $row['stop_name'] . ' (' . $row['code'] . ')';
+			}else
+				$json = false;
+		}
+		
+		// return for JS
+		drupal_json_output($json);
+	}
 /*
  * Validates user search information
 */
@@ -3439,7 +3515,7 @@ SQL;
 	function days_in_trip($legs) {
 		$days = 0;
 
-		$query = <<<SQL
+		/*$query = <<<SQL
 select sum(if(cast(ifnull(st.arrival_time, 0) as time) > cast(st2.departure_time as time), 1,  0))
 from stop_times st
 join trips t
@@ -3462,7 +3538,7 @@ SQL;
 
 		foreach ($legs as $leg) {
 			$days = $days + db_query($query, $leg)->fetchField();
-		}
+		}*/
 
 		return $days;
 
@@ -3650,7 +3726,7 @@ and not exists(select 1 from transfers where to_stop_id = st.sid and from_stop_i
 having first_next != second_next
  and first_prev != second_next
 order by departing_stop_name
-limit 45;
+limit 1800, 45;
 SQL;
 
 		
@@ -3671,14 +3747,14 @@ SQL;
 				$transfers['options'][$i] = 'Transfer available at '
 						. $transfer->arrival_stop_name
 						. ' from route <em>'
-								.  $transfer->arrival_route_long_name
-								. '</em> by <b>'
-										. $transfer->arrival_agency_name
-										. '</b> to route <em>'
-												. $transfer->departing_route_long_name
-												. '</em> by <b>'
-														. $transfer->departing_agency_name
-														. '</b>';
+					        .  $transfer->departing_route_long_name
+						. '</em> by <b>'
+						. $transfer->departing_agency_name
+					        . '</b> to route <em>'
+						. $transfer->arrival_route_long_name
+					        . '</em> by <b>'
+						. $transfer->arrival_agency_name
+						. '</b>';
 				$i++;
 			}
 		}
@@ -4542,37 +4618,8 @@ group by destination.destination_aid, destination.rid, destination.destination_s
 having destination.destination_stop_sequence > departure.departure_stop_sequence
   order by time(departure_departure_time) asc, time(destination_arrival_time) asc
 SQL;
-		/*$dayname = $args['dayname'];
-	
-		$query = db_select('routes', 'routes');
-		$query->join('trips', 'ot', 'routes.rid=ot.rid');
-		$query->join('stop_times', 'ost', 'ot.tid=ost.tid');
-		$query->join('stops', 'os', 'ost.sid=os.sid');
-		$query->join('provinces', 'op', 'os.province_id=op.province_id');
-		$query->join('routes', 'b', 'routes.rid=b.rid');
-		$query->join('trips', 'dt', 'routes.rid=ot.rid');
-		$query->join('stop_times', 'dst', 'ot.tid=ost.tid');
-		$query->join('stops', 'ds', 'ost.sid=os.sid');
-		$query->join('provinces', 'dp', 'os.province_id=op.province_id');
-		$query->join('calendar', 'cal', 'ot.service_id=cal.service_id');
-		$query->join('agencies', 'agencies', 'routes.aid=agencies.aid');
-		$query->join('transportation_types', 'tt', 'routes.transportation_type_id=tt.transportation_type_id');
-		$query->fields('routes', array('rid'))
-			->fields('ost', array('departure_time'))
-			->fields('dst', array('arrival_time'))
-			->fields('os', array('stop_name', 'stop_desc'))
-			->fields('ds', array('stop_name', 'stop_desc'))
-			->fields('tt', array('transportation_type_name'))
-			->fields('agencies', array('agency_name', 'agency_url', 'agency_phone'))
-			->condition('op.code', $args['opc'])
-			->condition('os.stop_name', $args['o'])
-			->condition('dp.code', $args['dpc'])
-			->condition('ds.stop_name', $args['d'])
-			->where("cal.$dayname = 1")
-			->where(':epoc BETWEEN cal.start_date AND cal.end_date', array(':epoc' => $args['epoc']))
-			->condition('dst.stop_sequence', 'ost.stop_sequence', '>');
+		
 
-		$result = $query->execute();*/
 		$result = db_query($query, $args);
 		while ($match = $result->fetchObject()) {
 			$match->search_type = 'point_to_point';
@@ -4581,6 +4628,7 @@ SQL;
 
 		return $results;
 	}
+
 
 	function fetch_ot_results(&$results, $args){
 		$query =<<<SQL
@@ -4607,6 +4655,7 @@ from
   ,  if(s.wheelchair_boarding = 1, 'Wheelchair access', '') as wheelchair_access
   ,  st.departure_time as departure_departure_time
   ,  st.arrival_time as departure_arrival_time
+  ,  st.tid as departure_tid
   ,  a.aid as origin_aid
   ,  a.agency_name as departure_agency_name
   ,  a.agency_url as departure_agency_url
@@ -4623,7 +4672,7 @@ from stops s
 join provinces p
 on p.province_id = s.province_id
 join stop_times st
-on st.tid = s.sid
+on st.sid = s.sid
 join trips t
 on t.tid = st.tid
 join calendar c
@@ -4655,21 +4704,25 @@ select s.stop_name as from_stop_name
   , st2.stop_sequence as to_stop_sequence
   , st2.departure_time as destination_transfer_arrival_time
   , t2.rid as to_rid
+  , st.tid as from_tid
+  , st2.tid as to_tid
 from transfers tr
-join stops s
-  on s.sid = tr.from_stop_id
 join stop_times st
-  on st.tid = s.sid
+  on st.sid = tr.from_stop_id
+  and st.tid = tr.from_tid
+join stop_times st2
+  on st2.sid = tr.to_stop_id
+  and st2.tid = tr.to_tid
 join trips t
   on t.tid = st.tid
+join stops s
+  on s.sid = st.sid
 join stops s2
-  on s2.sid = tr.to_stop_id
-join stop_times st2
-  on st2.tid = s2.sid
+  on s2.sid = st2.sid
 join trips t2
   on t2.tid = st2.tid
 ) transfer_points
-  on transfer_points.from_rid = origin.departure_rid
+  on transfer_points.from_tid = origin.departure_tid
   and origin.departure_stop_sequence < transfer_points.from_stop_sequence
 join
 (select s.sid as destination_sid
@@ -4679,6 +4732,7 @@ join
   ,  s.stop_desc as destination_description
   ,  st.arrival_time as destination_arrival_time
   ,  st.departure_time as destination_departure_time
+  ,  st.tid as destination_tid
   ,  a.aid as destination_aid
   ,  a.agency_name as destination_agency_name
   ,  a.agency_url as destination_agency_url
@@ -4697,7 +4751,7 @@ from stops s
 join provinces p
 on p.province_id = s.province_id
 join stop_times st
-on st.tid = s.sid
+on st.sid = s.sid
 join trips t
 on t.tid = st.tid
 join calendar c
@@ -4714,7 +4768,7 @@ where s.stop_name = :d
 and :epoc between c.start_date and c.end_date
 and dayname(:date) in (if(c.monday = 1, 'monday', ''), if(c.tuesday = 1, 'tuesday', ''), if(c.wednesday = 1, 'wednesday', ''), if(c.thursday = 1, 'thursday', ''), if(c.friday = 1, 'friday', ''), if(c.saturday = 1, 'saturday', ''), if(c.sunday = 1, 'sunday', ''))
 ) destination
-on transfer_points.to_rid = destination.destination_rid
+on transfer_points.to_tid = destination.destination_tid
   and destination.destination_stop_sequence > transfer_points.to_stop_sequence
 left join fare_rules fr
   on fr.origin_id = origin.departure_zone_id
